@@ -26,14 +26,35 @@ class Task(models.Model):
                                null=True,
                                on_delete=models.SET_NULL)
 
+    class Meta:
+        verbose_name = _("Task")
+        verbose_name_plural = _("Tasks")
+
+    def __str__(self):
+        return self.title
+
 
 class Label(models.Model):
     name = models.CharField(_("Name"),
                             max_length=255)
 
+    class Meta:
+        verbose_name = _("Label")
+        verbose_name_plural = _("Labels")
+
+    def __str__(self):
+        return self.name
+
 
 class Status(models.Model):
     name = models.CharField(_("Name"))
+
+    class Meta:
+        verbose_name = _("Status")
+        verbose_name_plural = _("Statuses")
+
+    def __str__(self):
+        return self.name
 
 
 class TaskLabel(models.Model):
@@ -45,6 +66,13 @@ class TaskLabel(models.Model):
                              verbose_name=_("Task"),
                              null=True, on_delete=models.SET,
                              related_name="labels")
+
+    class Meta:
+        verbose_name = _("Task Label")
+        verbose_name_plural = _("Task Labels")
+
+    def __str__(self):
+        return self.id
 
 
 class Comment(models.Model):
@@ -60,6 +88,13 @@ class Comment(models.Model):
                              on_delete=models.CASCADE,
                              related_name="comments")
 
+    class Meta:
+        verbose_name = _("Comment")
+        verbose_name_plural = _("Comments")
+
+    def __str__(self):
+        return self.content
+
 
 class Attachment(models.Model):
     content = models.FileField(_("Content"),
@@ -68,6 +103,13 @@ class Attachment(models.Model):
                              verbose_name=_("Task"),
                              on_delete=models.CASCADE,
                              related_name="attachments")
+
+    class Meta:
+        verbose_name = _("Attachment")
+        verbose_name_plural = _("Attachments")
+
+    def __str__(self):
+        return self.id
 
 
 class WorkTime(models.Model):
@@ -78,3 +120,10 @@ class WorkTime(models.Model):
                              verbose_name=_("Task"),
                              on_delete=models.CASCADE,
                              related_name="work_times")
+
+    class Meta:
+        verbose_name = _("Work Time")
+        verbose_name_plural = _("Work times")
+
+    def __str__(self):
+        return self.id
