@@ -19,3 +19,8 @@ class Label(models.Model):
 
 class Status(models.Model):
     name = models.CharField(_("Name"))
+
+
+class TaskLabel(models.Model):
+    label = models.ForeignKey("Label", verbose_name=_("Label"),null=True, on_delete=models.SET_NULL)
+    task = models.ForeignKey("Task", verbose_name=_("Task"), null=True, on_delete=models.SET)
