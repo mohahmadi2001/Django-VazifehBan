@@ -36,3 +36,9 @@ class Comment(models.Model):
 class Attachment(models.Model):
     content = models.FileField(_("Content"), upload_to="task-attachments")
     task = models.ForeignKey("Task", verbose_name=_("Task"), on_delete=models.CASCADE, related_name="attachments")
+
+
+class WorkTime(models.Model):
+    start_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField(auto_now=True, null=True)
+    task = models.ForeignKey("Task", verbose_name=_("Task"), on_delete=models.CASCADE, related_name="work_times")
