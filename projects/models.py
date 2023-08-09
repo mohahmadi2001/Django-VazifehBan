@@ -38,6 +38,14 @@ class Project(models.Model):
         verbose_name = _("Project")
         verbose_name_plural = _("Projects")
     
+    def create_sprint(self, start_date, end_date):
+        sprint = Sprint.objects.create(
+            start_date=start_date,
+            end_date=end_date, 
+            project=self
+            )
+        return sprint
+    
     def __str__(self):
         return self.title
     
