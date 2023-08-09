@@ -31,3 +31,8 @@ class Comment(models.Model):
     created_at = models.DateTimeField(_("Created Time"), auto_now_add=True)
     user = models.ForeignKey("accounts.User", verbose_name=_("User"), on_delete=models.CASCADE, related_name="comments")
     task = models.ForeignKey("Task", verbose_name=_("Task"), on_delete=models.CASCADE, related_name="comments")
+
+
+class Attachment(models.Model):
+    content = models.FileField(_("Content"), upload_to="task-attachments")
+    task = models.ForeignKey("Task", verbose_name=_("Task"), on_delete=models.CASCADE, related_name="attachments")
