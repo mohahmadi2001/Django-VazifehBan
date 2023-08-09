@@ -15,3 +15,7 @@ class Task(models.Model):
 
 class Label(models.Model):
     name = models.CharField(_("Name"), max_length=255)
+
+
+class Status(models.Model):
+    name = models.CharField(_("Name"))
