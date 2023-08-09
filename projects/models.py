@@ -1,3 +1,4 @@
+from datetime import timezone
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -45,6 +46,9 @@ class Project(models.Model):
             project=self
             )
         return sprint
+    
+    def get_active_sprints(self):
+        return self.sprints.filter(end_date__gte=timezone.now())
     
     def __str__(self):
         return self.title
