@@ -10,6 +10,17 @@ class WorkSpace(models.Model):
     class Meta:
         verbose_name = _("WorkSpace")
         verbose_name_plural = _("WorkSpaces")
+    
+    def create_project(self, title, description, start_date, end_date, deadline):
+        project = Project.objects.create(
+            title=title,
+            description=description,
+            start_date=start_date,
+            end_date=end_date,
+            deadline=deadline,
+            workspace=self,
+        )
+        return project
 
     def __str__(self):
         return self.title
