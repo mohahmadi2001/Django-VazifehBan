@@ -12,3 +12,6 @@ class Task(models.Model):
     user = models.ForeignKey("accounts.User", verbose_name=_("User"), null=True, on_delete=models.SET_NULL)
     status = models.ForeignKey("Status", verbose_name=_("Status"), null=True, on_delete=models.SET_NULL)
 
+
+class Label(models.Model):
+    name = models.CharField(_("Name"), max_length=255)
