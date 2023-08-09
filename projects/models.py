@@ -2,12 +2,10 @@ from datetime import timezone
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-# Create your models here.
 
 class WorkSpace(models.Model):
     title = models.CharField(_("Title"), max_length=50)
 
-    
     class Meta:
         verbose_name = _("WorkSpace")
         verbose_name_plural = _("WorkSpaces")
@@ -33,7 +31,10 @@ class Project(models.Model):
     start_date = models.DateTimeField(_("Start Date"),auto_now_add=True)
     end_date = models.DateTimeField(_("End Date"))
     deadline = models.DateTimeField(_("Deadline"))
-    workspace = models.ForeignKey(WorkSpace, verbose_name=_("WorkSpace"), on_delete=models.CASCADE)
+    workspace = models.ForeignKey("WorkSpace",
+                                  verbose_name=_("WorkSpace"),
+                                  on_delete=models.CASCADE,
+                                  related_name="projects")
     
     class Meta:
         verbose_name = _("Project")
@@ -60,11 +61,10 @@ class Project(models.Model):
 class Sprint(models.Model):
     start_date = models.DateTimeField(_("Start Date"),auto_now_add=True)
     end_date = models.DateTimeField(_("End Date"))
-    project = models.ForeignKey(Project,
-                                   verbose_name=_("Project"),
-                                   on_delete=models.CASCADE
-                                   )
-
+    project = models.ForeignKey("Project",
+                                verbose_name=_("Project"),
+                                on_delete=models.CASCADE,
+                                related_name="sprints")
 
     class Meta:
         verbose_name = _("Sprint")
