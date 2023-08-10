@@ -1,12 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils.translation import gettext as _
+
 
 
 class CustomUser(AbstractUser):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
-    teams = models.ManyToManyField('Team', through='UserTeam')
+    teams = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam', related_name='users')
 
 
     # Extra fields for specific users and superusers
@@ -15,6 +17,13 @@ class CustomUser(AbstractUser):
 
     def get_staff_status(self):
         return self.is_staff_override 
+    
+    class Meta:
+        verbose_name = _("User")
+        verbose_name_plural = _("Users")
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
     
 
     @classmethod
@@ -88,10 +97,19 @@ class CustomUser(AbstractUser):
         return None
     
 class Team(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    users = models.ManyToManyField(CustomUser, through='UserTeam')
-    owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
-    description = models.TextField()
+    name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
+    users = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam', related_name="teams")
+    owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_teams")
+    description = models.TextField(verbose_name=_("Description"))
+
+    class Meta:
+        verbose_name = _("Team")
+        verbose_name_plural = _("Teams")
+
+
+    def __str__(self):
+        return self.name
+    
 
     @classmethod
     def create(cls, name, owner, description):
@@ -180,6 +198,14 @@ class Team(models.Model):
 class UserTeam(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = _("User Team")
+        verbose_name_plural = _("User Teams")
+
+    def __str__(self):
+        return f"UserTeam - user: {self.user.username}, team: {self.team.name}"
+    
 
     @classmethod
     def create(cls, user, team):
