@@ -53,10 +53,10 @@ class Project(models.Model):
         return sprint
     
     def get_active_sprints(self):
-        return self.sprint_set.filter(end_date__gte=timezone.now())
+        return self.sprints.filter(end_date__gte=timezone.now())
     
     def get_completed_sprints(self):
-        return self.sprint_set.filter(end_date__lt=timezone.now())
+        return self.sprints.filter(end_date__lt=timezone.now())
     
     def __str__(self):
         return self.title
