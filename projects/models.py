@@ -5,7 +5,11 @@ from django.utils.translation import gettext_lazy as _
 
 class WorkSpace(models.Model):
     title = models.CharField(_("Title"), max_length=50)
-
+    team = models.ForeignKey("accounts.Team",
+                             verbose_name=_("Team"),
+                             on_delete=models.CASCADE
+                             )
+    
     class Meta:
         verbose_name = _("WorkSpace")
         verbose_name_plural = _("WorkSpaces")
