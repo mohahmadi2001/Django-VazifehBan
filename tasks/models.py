@@ -5,9 +5,6 @@ from django.utils.translation import gettext as _
 class Task(models.Model):
     title = models.CharField(_("Title"), max_length=255)
     description = models.TextField(_("Description"))
-    start_date = models.DateTimeField(_("Start Date"),
-                                      auto_now=True,
-                                      null=True)
     end_date = models.DateTimeField(_("End Date"),
                                     auto_now=True,
                                     null=True)
@@ -41,17 +38,6 @@ class Label(models.Model):
     class Meta:
         verbose_name = _("Label")
         verbose_name_plural = _("Labels")
-
-    def __str__(self):
-        return self.name
-
-
-class Status(models.Model):
-    name = models.CharField(_("Name"))
-
-    class Meta:
-        verbose_name = _("Status")
-        verbose_name_plural = _("Statuses")
 
     def __str__(self):
         return self.name
