@@ -3,18 +3,20 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext as _
 
 
-
 class CustomUser(AbstractUser):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     teams = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam', related_name='users')
-
-
-    # Extra fields for specific users and superusers
     is_staff_override = models.BooleanField(default=False)
     
+    class Meta:
+        verbose_name = _("User")
+        verbose_name_plural = _("Users")
 
+    def __str__(self):
+        return self.username
+    
     def get_staff_status(self):
         return self.is_staff_override 
     
@@ -106,11 +108,9 @@ class Team(models.Model):
         verbose_name = _("Team")
         verbose_name_plural = _("Teams")
 
-
     def __str__(self):
         return self.name
     
-
     @classmethod
     def create(cls, name, owner, description):
         """Creates a new team.
@@ -194,10 +194,12 @@ class Team(models.Model):
 
         team.delete()
         return team
+      
 
 class UserTeam(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    is_owner = models.BooleanField(verbose_name=_("Is Owner"), default=False)
 
     class Meta:
         verbose_name = _("User Team")
@@ -233,5 +235,3 @@ class UserTeam(models.Model):
         """
 
         return cls.objects.get(pk=pk)
-
-    
