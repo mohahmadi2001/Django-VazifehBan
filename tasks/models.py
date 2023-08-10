@@ -50,7 +50,7 @@ class TaskLabel(models.Model):
                               on_delete=models.SET_NULL)
     task = models.ForeignKey("Task",
                              verbose_name=_("Task"),
-                             null=True, on_delete=models.SET,
+                             null=True, on_delete=models.SET_NULL,
                              related_name="labels")
 
     class Meta:
