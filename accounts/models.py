@@ -4,11 +4,7 @@ from django.utils.translation import gettext as _
 
 
 class User(AbstractUser):
-    first_name = models.CharField(_("First Name"), max_length=255)
-    last_name = models.CharField(_("Last Name"), max_length=255)
-    email = models.EmailField(_("Email"), unique=True)
     teams = models.ManyToManyField("Team", verbose_name=_("Teams"), through='UserTeam')
-    is_staff = models.BooleanField(_("First Name"), default=False)
 
     class Meta:
         verbose_name = _("User")
