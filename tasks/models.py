@@ -3,6 +3,12 @@ from django.utils.translation import gettext as _
 
 
 class Task(models.Model):
+    CHOICES = (
+        ("N_F", "New Feature"),
+        ("Re", "Refactoring"),
+        ("B_F", "Bug Fix"),
+        ("R_D", "Research & Development"),
+    )
     title = models.CharField(_("Title"), max_length=255)
     description = models.TextField(_("Description"))
     end_date = models.DateTimeField(_("End Date"),
@@ -18,10 +24,7 @@ class Task(models.Model):
                              null=True,
                              on_delete=models.SET_NULL,
                              related_name="tasks")
-    status = models.ForeignKey("Status",
-                               verbose_name=_("Status"),
-                               null=True,
-                               on_delete=models.SET_NULL)
+    status = models.CharField(_("Status"), choices=CHOICES, max_length=255)
 
     class Meta:
         verbose_name = _("Task")
