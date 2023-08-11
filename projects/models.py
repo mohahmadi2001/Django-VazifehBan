@@ -1,7 +1,7 @@
 from datetime import timezone
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from core.models import SoftDeleteModel
+from core.models import SoftDeleteModel,TimeStampMixin
 from tasks.models import Task
 
 
@@ -19,17 +19,23 @@ class WorkSpace(SoftDeleteModel):
     
     def __str__(self):
         return self.title
+    
+    def create_workspace(self, title, team):
+        """Creates a new workspace.
 
-    def create_project(self, title, description, end_date, deadline):
-        project = Project.objects.create(
+        Args:
+            title (str): Title of the workspace.
+            team (Team): The associated team.
+
+        Returns:
+            WorkSpace: The newly created workspace object.
+        """
+        workspace = self.objects.create(
             title=title,
-            description=description,
-            end_date=end_date,
-            deadline=deadline,
-            workspace=self,
-            created_at=timezone.now()
+            team=team
         )
-        return project
+        return workspace
+
 
     def get_workspace_information(self):
         projects_list = [project.title for project in self.projects.all()]
@@ -48,12 +54,9 @@ class WorkSpace(SoftDeleteModel):
         self.save()
     
     
-class Project(SoftDeleteModel):
+class Project(SoftDeleteModel,TimeStampMixin):
     title = models.CharField(_("Title"), max_length=50)
     description = models.TextField(_("Description"))
-    create_at = models.DateTimeField(_("Start Date"),auto_now_add=True)
-    end_date = models.DateTimeField(_("End Date"))
-    deadline = models.DateTimeField(_("Deadline"))
     workspace = models.ForeignKey("WorkSpace",
                                   verbose_name=_("WorkSpace"),
                                   on_delete=models.CASCADE,
@@ -63,13 +66,6 @@ class Project(SoftDeleteModel):
         verbose_name = _("Project")
         verbose_name_plural = _("Projects")
     
-    def create_sprint(self, start_date, end_date):
-        sprint = Sprint.objects.create(
-            start_date=start_date,
-            end_date=end_date, 
-            project=self
-            )
-        return sprint
     
     def get_project_info(self):
         return {
@@ -94,9 +90,7 @@ class Project(SoftDeleteModel):
         return self.title
     
     
-class Sprint(SoftDeleteModel):
-    start_date = models.DateTimeField(_("Start Date"),auto_now_add=True)
-    end_date = models.DateTimeField(_("End Date"))
+class Sprint(SoftDeleteModel,TimeStampMixin):
     project = models.ForeignKey("Project",
                                 verbose_name=_("Project"),
                                 on_delete=models.CASCADE,
@@ -110,16 +104,6 @@ class Sprint(SoftDeleteModel):
     def __str__(self):
         return f"Sprint {self.start_date.strftime('%Y-%m-%d')}"
     
-    def create_task(self, title, description, user, status):
-        task = Task.objects.create(
-            title=title,
-            description=description,
-            sprint=self,
-            user=user,
-            status=status,
-            created_at=timezone.now()
-        )
-        return task
 
     def get_sprint_info(self):
         active_tasks = self.tasks.filter(end_date__gte=timezone.now())
