@@ -90,7 +90,7 @@ class CustomUser(AbstractUser):
 
 class Team(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
-    users = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam', related_name="teams")
+    users = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam')
     owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_teams")
     description = models.TextField(verbose_name=_("Description"))
 
