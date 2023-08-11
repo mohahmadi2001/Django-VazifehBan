@@ -129,5 +129,15 @@ class Sprint(models.Model):
         )
         return task
 
+    def get_sprint_info(self):
+        active_tasks = self.tasks.filter(end_date__gte=timezone.now())
+        completed_tasks = self.tasks.filter(end_date__lt=timezone.now())
+        return {
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "project": self.project,
+            "active_tasks": active_tasks,
+            "completed_tasks": completed_tasks,
+        }
 
 
