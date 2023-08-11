@@ -1,18 +1,17 @@
 from datetime import timezone
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
+from core.models import SoftDeleteModel
 from tasks.models import Task
 
 
-class WorkSpace(models.Model):
+class WorkSpace(SoftDeleteModel):
     title = models.CharField(_("Title"), max_length=50)
     team = models.ForeignKey("accounts.Team",
                              verbose_name=_("Team"),
                              on_delete=models.CASCADE,
                              related_name="workspaces"
                              )
-    is_active = models.BooleanField(_("Is Active"), default=True)
     
     class Meta:
         verbose_name = _("WorkSpace")
@@ -48,11 +47,8 @@ class WorkSpace(models.Model):
         self.team = new_team
         self.save()
     
-    def deactivate_workspace(self):
-        self.is_active = False
-        self.save()
     
-class Project(models.Model):
+class Project(SoftDeleteModel):
     title = models.CharField(_("Title"), max_length=50)
     description = models.TextField(_("Description"))
     start_date = models.DateTimeField(_("Start Date"),auto_now_add=True)
@@ -62,7 +58,6 @@ class Project(models.Model):
                                   verbose_name=_("WorkSpace"),
                                   on_delete=models.CASCADE,
                                   related_name="projects")
-    is_active = models.BooleanField(default=True, verbose_name=_("Is Active"))
     
     class Meta:
         verbose_name = _("Project")
@@ -88,9 +83,6 @@ class Project(models.Model):
     def edit_project(self, **kwargs):
         Project.objects.filter(pk=self.pk).update(**kwargs)
     
-    def deactivate_project(self):
-        self.is_active = False
-        self.save()
     
     def get_active_sprints(self):
         return self.sprints.filter(end_date__gte=timezone.now())
@@ -102,7 +94,7 @@ class Project(models.Model):
         return self.title
     
     
-class Sprint(models.Model):
+class Sprint(SoftDeleteModel):
     start_date = models.DateTimeField(_("Start Date"),auto_now_add=True)
     end_date = models.DateTimeField(_("End Date"))
     project = models.ForeignKey("Project",
@@ -144,6 +136,3 @@ class Sprint(models.Model):
     def edit_sprint(self, **kwargs):
         Sprint.objects.filter(pk=self.pk).update(**kwargs)
 
-    def deactivate_sprint(self):
-        self.is_active = False
-        self.save()
