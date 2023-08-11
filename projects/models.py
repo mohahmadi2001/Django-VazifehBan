@@ -44,12 +44,10 @@ class WorkSpace(SoftDeleteModel):
             'projects': projects_list,
         }
     
-    def edit_workspace(self, new_title):
+    def edit_workspace(self, new_title, new_team=None):
         self.title = new_title
-        self.save()
-    
-    def change_team(self, new_team):
-        self.team = new_team
+        if new_team is not None:
+            self.team = new_team
         self.save()
     
     
