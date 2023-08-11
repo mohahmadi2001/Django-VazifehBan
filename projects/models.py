@@ -20,14 +20,14 @@ class WorkSpace(SoftDeleteModel):
     def __str__(self):
         return self.title
 
-    def create_project(self, title, description, start_date, end_date, deadline):
+    def create_project(self, title, description, end_date, deadline):
         project = Project.objects.create(
             title=title,
             description=description,
-            start_date=start_date,
             end_date=end_date,
             deadline=deadline,
             workspace=self,
+            created_at=timezone.now()
         )
         return project
 
@@ -51,7 +51,7 @@ class WorkSpace(SoftDeleteModel):
 class Project(SoftDeleteModel):
     title = models.CharField(_("Title"), max_length=50)
     description = models.TextField(_("Description"))
-    start_date = models.DateTimeField(_("Start Date"),auto_now_add=True)
+    create_at = models.DateTimeField(_("Start Date"),auto_now_add=True)
     end_date = models.DateTimeField(_("End Date"))
     deadline = models.DateTimeField(_("Deadline"))
     workspace = models.ForeignKey("WorkSpace",
@@ -110,16 +110,15 @@ class Sprint(SoftDeleteModel):
     def __str__(self):
         return f"Sprint {self.start_date.strftime('%Y-%m-%d')}"
     
-    def create_task(self, title,created_at, description,deadline, user=None, status=None):
+    def create_task(self, title, description, user, status):
         task = Task.objects.create(
-        title=title,
-        created_at=created_at,
-        deadline=deadline,
-        description=description,
-        sprint=self,  
-        user=user,
-        status=status
-    )
+            title=title,
+            description=description,
+            sprint=self,
+            user=user,
+            status=status,
+            created_at=timezone.now()
+        )
         return task
 
     def get_sprint_info(self):
