@@ -96,7 +96,7 @@ class TaskLabel(models.Model):
         task_label = get_object_or_404(TaskLabel, pk=id)
         return task_label
     
-    def update_task_label(self: "TaskLabel",id, **kwargs);
+    def update_task_label(self: "TaskLabel", id, **kwargs):
         task_label = TaskLabel.get_task_label(id)
         for attr, value in kwargs.items():
             setattr(task_label, attr, value)
@@ -190,6 +190,22 @@ class WorkTime(models.Model):
                              verbose_name=_("Task"),
                              on_delete=models.CASCADE,
                              related_name="work_times")
+
+    @classmethod
+    def create_worktime(cls: "WorkTime", start_date, end_date, task_id):
+        worktime = cls.objects.create(start_date=start_date, end_date=end_date, task=task_id)
+        return worktime
+
+    @classmethod
+    def get_worktime(cls: "WorkTime", id):
+        worktime = get_object_or_404(WorkTime, pk=id)
+        return worktime
+    
+    def update_worktime(self: "WorkTime", id, **kwargs):
+        worktime = WorkTime.get_worktime(id)
+        for attr, value in kwargs.items():
+            setattr(worktime, attr, value)
+        worktime.save()
 
     class Meta:
         verbose_name = _("Work Time")
