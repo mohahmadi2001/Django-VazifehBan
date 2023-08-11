@@ -142,8 +142,8 @@ class Sprint(SoftDeleteModel,TimeStampMixin):
         active_tasks = self.tasks.filter(end_date__gte=timezone.now())
         completed_tasks = self.tasks.filter(end_date__lt=timezone.now())
         return {
-            "start_date": self.start_date,
-            "end_date": self.end_date,
+            "start_date": self.started_at,
+            "end_date": self.ended_at,
             "project": self.project,
             "active_tasks": active_tasks,
             "completed_tasks": completed_tasks,
@@ -152,8 +152,4 @@ class Sprint(SoftDeleteModel,TimeStampMixin):
     def edit_sprint(self, **kwargs):
         Sprint.objects.filter(pk=self.pk).update(**kwargs)
 
-    def get_active_sprints(self):
-        return self.sprints.filter(end_date__gte=timezone.now())
     
-    def get_completed_sprints(self):
-        return self.sprints.filter(end_date__lt=timezone.now())
