@@ -86,7 +86,7 @@ class Project(models.Model):
         }
     
     def edit_project(self, **kwargs):
-        self.objects.filter(pk=self.pk).update(**kwargs)
+        Project.objects.filter(pk=self.pk).update(**kwargs)
     
     def deactivate_project(self):
         self.is_active = False
@@ -140,4 +140,6 @@ class Sprint(models.Model):
             "completed_tasks": completed_tasks,
         }
 
+    def edit_sprint(self, **kwargs):
+        Sprint.objects.filter(pk=self.pk).update(**kwargs)
 
