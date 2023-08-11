@@ -39,6 +39,10 @@ class WorkSpace(models.Model):
             'projects': projects_list,
         }
     
+    def edit_workspace(self, new_title):
+        self.title = new_title
+        self.save()
+    
 class Project(models.Model):
     title = models.CharField(_("Title"), max_length=50)
     description = models.TextField(_("Description"))
