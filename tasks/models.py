@@ -10,7 +10,7 @@ class Task(models.Model):
     )
     title = models.CharField(_("Title"), max_length=255)
     created_at = models.DateTimeField(verbose_name=_("Created Date"),
-                                        auto_now_add=True)
+                                      auto_now_add=True)
     description = models.TextField(_("Description"))
     deadline = models.DateTimeField(_("Dead Line"), auto_now=True)
     sprint = models.ForeignKey("projects.Sprint",
@@ -31,6 +31,25 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
+    def create_task(self, title, description, deadline, sprint, user, status):
+        task = Task.objects.create(title=title,
+                                   description=description,
+                                   deadline=deadline,
+                                   sprint=sprint,
+                                   user=user,
+                                   status=status)
+        return task
+    
+    @classmethod
+    def get_task(cls: "Task", id):
+        task = cls.objects.get(pk=id)
+        return task
+    
+
+    def update_task(self: "Task", **kwargs):
+        for attr, value in kwargs.items():
+            self.objects.update(attr=value)
+        
 
 class Label(models.Model):
     name = models.CharField(_("Name"),
