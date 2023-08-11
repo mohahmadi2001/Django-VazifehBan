@@ -67,6 +67,29 @@ class Project(SoftDeleteModel,TimeStampMixin):
         verbose_name_plural = _("Projects")
     
     
+    def create_project(self, title, description, start_date, end_date, deadline):
+        """Creates a new project.
+
+        Args:
+            title (str): Title of the project.
+            description (str): Description of the project.
+            start_date (datetime): Start date of the project.
+            end_date (datetime): End date of the project.
+            deadline (datetime): Deadline of the project.
+
+        Returns:
+            Project: The newly created project object.
+        """
+        project = Project.objects.create(
+            title=title,
+            description=description,
+            start_date=start_date,
+            end_date=end_date,
+            deadline=deadline,
+            workspace=self.workspace
+        )
+        return project
+    
     def get_project_info(self):
         return {
             "title": self.title,
