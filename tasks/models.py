@@ -157,6 +157,23 @@ class Attachment(models.Model):
                              on_delete=models.CASCADE,
                              related_name="attachments")
 
+    @classmethod
+    def create_attachment(cls: "Attachment", content, task_id):
+        attachment = cls.objects.create(content=content, task=task_id)
+        return attachment
+    
+    @classmethod
+    def get_attachment(cls: "Attachment", id):
+        attachment = get_object_or_404(Attachment, pk=id)
+        return attachment
+    
+    def update_attachment(self: "Attachment", id, **kwargs):
+        attachment = Attachment.get_attachment(id)
+        for attr, value in kwargs.items():
+            setattr(attachment, attr, value)
+        attachment.save()
+
+
     class Meta:
         verbose_name = _("Attachment")
         verbose_name_plural = _("Attachments")
