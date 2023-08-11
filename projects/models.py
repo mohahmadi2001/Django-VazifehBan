@@ -2,6 +2,8 @@ from datetime import timezone
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from tasks.models import Task
+
 
 class WorkSpace(models.Model):
     title = models.CharField(_("Title"), max_length=50)
@@ -77,6 +79,18 @@ class Sprint(models.Model):
 
     def __str__(self):
         return f"Sprint {self.start_date.strftime('%Y-%m-%d')}"
+    
+    def create_task(self, title, description, end_date, deadline, user=None, status=None):
+        task = Task.objects.create(
+            title=title,
+            description=description,
+            end_date=end_date,
+            deadline=deadline,
+            sprint=self,
+            user=user,
+            status=status
+        )
+        return task
 
 
 
