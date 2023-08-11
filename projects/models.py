@@ -94,8 +94,8 @@ class Project(SoftDeleteModel,TimeStampMixin):
         return {
             "title": self.title,
             "description": self.description,
-            "start_date": self.start_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "end_date": self.end_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "start_date": self.started_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "end_date": self.ended_at.strftime("%Y-%m-%d %H:%M:%S"),
             "deadline": self.deadline.strftime("%Y-%m-%d %H:%M:%S"),
         }
     
