@@ -109,6 +109,7 @@ class Sprint(models.Model):
                                 verbose_name=_("Project"),
                                 on_delete=models.CASCADE,
                                 related_name="sprints")
+    is_active = models.BooleanField(_("Is Active"), default=True)
 
     class Meta:
         verbose_name = _("Sprint")
@@ -143,3 +144,6 @@ class Sprint(models.Model):
     def edit_sprint(self, **kwargs):
         Sprint.objects.filter(pk=self.pk).update(**kwargs)
 
+    def deactivate_sprint(self):
+        self.is_active = False
+        self.save()
