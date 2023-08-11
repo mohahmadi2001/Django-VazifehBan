@@ -75,6 +75,15 @@ class Project(models.Model):
             )
         return sprint
     
+    def get_project_info(self):
+        return {
+            "title": self.title,
+            "description": self.description,
+            "start_date": self.start_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "end_date": self.end_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "deadline": self.deadline.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+    
     def get_active_sprints(self):
         return self.sprints.filter(end_date__gte=timezone.now())
     
