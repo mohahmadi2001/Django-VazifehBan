@@ -1,5 +1,7 @@
 from django.db import models
 from django.db.models.query import QuerySet
+from django.utils.translation import gettext_lazy as _
+
 # Create your models here.
 
 
@@ -22,3 +24,8 @@ class SoftDeleteModel(models.Model):
 
     class Meta:
         abstract = True
+        
+class TimeStampMixin:
+    started_at = models.DateTimeField(_("Start time"))
+    ended_at = models.DateTimeField(_("End time"))
+    deadline = models.DateTimeField(_("Deadline"))
