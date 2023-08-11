@@ -17,6 +17,9 @@ class WorkSpace(models.Model):
         verbose_name = _("WorkSpace")
         verbose_name_plural = _("WorkSpaces")
     
+    def __str__(self):
+        return self.title
+
     def create_project(self, title, description, start_date, end_date, deadline):
         project = Project.objects.create(
             title=title,
@@ -28,10 +31,14 @@ class WorkSpace(models.Model):
         )
         return project
 
-    def __str__(self):
-        return self.title
-
-
+    def get_workspace_information(self):
+        projects_list = [project.title for project in self.projects.all()]
+        return {
+            'title': self.title,
+            'team': self.team.name,
+            'projects': projects_list,
+        }
+    
 class Project(models.Model):
     title = models.CharField(_("Title"), max_length=50)
     description = models.TextField(_("Description"))
