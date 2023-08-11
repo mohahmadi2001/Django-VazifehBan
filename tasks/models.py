@@ -101,7 +101,7 @@ class TaskLabel(models.Model):
         for attr, value in kwargs.items():
             setattr(task_label, attr, value)
         task_label.save()
-        
+
     class Meta:
         verbose_name = _("Task Label")
         verbose_name_plural = _("Task Labels")
@@ -122,6 +122,24 @@ class Comment(models.Model):
                              verbose_name=_("Task"),
                              on_delete=models.CASCADE,
                              related_name="comments")
+
+    @classmethod
+    def create_comment(cls: "Comment", content, user_id, task_id):
+        comment = cls.objects.create(content=content,
+                                     user=user_id,
+                                     task=task_id)
+        return comment
+    
+    @classmethod
+    def get_comment(cls: "Comment", id):
+        comment = get_object_or_404(Comment, pk=id)
+        return comment
+    
+    def update_comment(self: "Comment", id, **kwargs):
+        comment = Comment.get_comment(id)
+        for attr, value in kwargs.items():
+            setattr(comment, attr, value)
+        comment.save()
 
     class Meta:
         verbose_name = _("Comment")
