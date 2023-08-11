@@ -196,7 +196,7 @@ class UserTeam(models.Model):
         verbose_name_plural = _("User Teams")
 
     def __str__(self):
-        return f"UserTeam - user: {self.user.username}, team: {self.team.name}"
+        return f"UserTeam - user: {self.user}, team: {self.team}"
 
     @classmethod
     def create(cls, user, team):
