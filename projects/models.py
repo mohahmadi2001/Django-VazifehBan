@@ -36,7 +36,6 @@ class WorkSpace(SoftDeleteModel):
         )
         return workspace
 
-
     def get_workspace_information(self):
         projects_list = [project.title for project in self.projects.all()]
         return {
