@@ -48,7 +48,7 @@ class WorkSpace(models.Model):
         self.team = new_team
         self.save()
     
-    def delete_workspace(self):
+    def deactivate_workspace(self):
         self.is_active = False
         self.save()
     
@@ -62,6 +62,7 @@ class Project(models.Model):
                                   verbose_name=_("WorkSpace"),
                                   on_delete=models.CASCADE,
                                   related_name="projects")
+    is_active = models.BooleanField(default=True, verbose_name=_("Is Active"))
     
     class Meta:
         verbose_name = _("Project")
@@ -83,6 +84,13 @@ class Project(models.Model):
             "end_date": self.end_date.strftime("%Y-%m-%d %H:%M:%S"),
             "deadline": self.deadline.strftime("%Y-%m-%d %H:%M:%S"),
         }
+    
+    def edit_project(self, **kwargs):
+        self.objects.filter(pk=self.pk).update(**kwargs)
+    
+    def deactivate_project(self):
+        self.is_active = False
+        self.save()
     
     def get_active_sprints(self):
         return self.sprints.filter(end_date__gte=timezone.now())
