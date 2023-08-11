@@ -1,4 +1,5 @@
 from django.db import models
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 
 
@@ -42,14 +43,15 @@ class Task(models.Model):
     
     @classmethod
     def get_task(cls: "Task", id):
-        task = cls.objects.get(pk=id)
+        task = get_object_or_404(Task, pk=id)
         return task
     
 
-    def update_task(self: "Task", **kwargs):
+    def update_task(self: "Task", task_id, **kwargs):
+        task = Task.get_task(task_id)
         for attr, value in kwargs.items():
-            self.objects.update(attr=value)
-        
+            setattr(task, attr, value)
+        task.save()
 
 class Label(models.Model):
     name = models.CharField(_("Name"),
@@ -115,7 +117,7 @@ class Attachment(models.Model):
         verbose_name_plural = _("Attachments")
 
     def __str__(self):
-        return self.id
+        return f"Attachment {self.id}"
 
 
 class WorkTime(models.Model):
@@ -132,4 +134,4 @@ class WorkTime(models.Model):
         verbose_name_plural = _("Work times")
 
     def __str__(self):
-        return self.id
+        return f"task: {self.task}, start time: {self.start_date.strftime('%Y - %m - %d')}"
