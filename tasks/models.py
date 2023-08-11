@@ -32,7 +32,8 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
-    def create_task(self, title, description, deadline, sprint, user, status):
+    @classmethod
+    def create_task(cls: "Task", title, description, deadline, sprint, user, status):
         task = Task.objects.create(title=title,
                                    description=description,
                                    deadline=deadline,
@@ -57,10 +58,12 @@ class Label(models.Model):
     name = models.CharField(_("Name"),
                             max_length=255)
 
+    @classmethod
     def create_label(self: "Label", name):
         label = Label.objects.create(name=name)
         return label
     
+    @classmethod
     def get_label(self: "Label", id):
         label = get_object_or_404(Label, pk=id)
         return label
@@ -83,6 +86,22 @@ class TaskLabel(models.Model):
                              null=True, on_delete=models.SET_NULL,
                              related_name="labels")
 
+    @classmethod
+    def create_task_label(cls: "TaskLabel", label_id, task_id):
+            task_label = cls.objects.create(label=label_id, task=task_id)
+            return task_label
+    
+    @classmethod
+    def get_task_label(cls: "TaskLabel", id):
+        task_label = get_object_or_404(TaskLabel, pk=id)
+        return task_label
+    
+    def update_task_label(self: "TaskLabel",id, **kwargs);
+        task_label = TaskLabel.get_task_label(id)
+        for attr, value in kwargs.items():
+            setattr(task_label, attr, value)
+        task_label.save()
+        
     class Meta:
         verbose_name = _("Task Label")
         verbose_name_plural = _("Task Labels")
