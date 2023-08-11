@@ -63,7 +63,22 @@ class Task(models.Model):
     def task_status(cls: "Task", status):
         tasks = cls.objects.filter(status=status)
         return tasks
+    
+    @property
+    def all_attachments(self: "Task"):
+        attachments = self.attachments
+        return attachments
+    
+    @property
+    def all_comments(self: "Task"):
+        comments = self.comments
+        return comments
 
+    @property
+    def all_worktimes(self: "Task"):
+        worktimes = self.work_times
+        return worktimes
+    
 class Label(models.Model):
     name = models.CharField(_("Name"),
                             max_length=255)
@@ -114,7 +129,7 @@ class TaskLabel(models.Model):
         for attr, value in kwargs.items():
             setattr(task_label, attr, value)
         task_label.save()
-        
+
     class Meta:
         verbose_name = _("Task Label")
         verbose_name_plural = _("Task Labels")
@@ -205,8 +220,8 @@ class WorkTime(models.Model):
                              related_name="work_times")
 
     @classmethod
-    def create_worktime(cls: "WorkTime", start_date, end_date, task_id):
-        worktime = cls.objects.create(start_date=start_date, end_date=end_date, task=task_id)
+    def create_worktime(cls: "WorkTime", start_date, task_id):
+        worktime = cls.objects.create(start_date=start_date, task=task_id)
         return worktime
 
     @classmethod
@@ -219,6 +234,10 @@ class WorkTime(models.Model):
         for attr, value in kwargs.items():
             setattr(worktime, attr, value)
         worktime.save()
+
+    def complete_worktime(self: "WorkTime", enddate):
+        self.end_date = enddate
+        self.save()
 
     class Meta:
         verbose_name = _("Work Time")
