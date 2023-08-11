@@ -7,26 +7,18 @@ class CustomUser(AbstractUser):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
-    teams = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam', related_name='users')
+    teams = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam')
     is_staff_override = models.BooleanField(default=False)
     
     class Meta:
         verbose_name = _("User")
         verbose_name_plural = _("Users")
 
-    def __str__(self):
-        return self.username
-    
     def get_staff_status(self):
         return self.is_staff_override 
-    
-    class Meta:
-        verbose_name = _("User")
-        verbose_name_plural = _("Users")
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
-    
 
     @classmethod
     def create(cls, first_name, last_name, email):
@@ -42,7 +34,6 @@ class CustomUser(AbstractUser):
         """
 
         return cls.objects.create(first_name=first_name, last_name=last_name, email=email)
-    
 
     @classmethod
     def read(cls, pk):
@@ -58,7 +49,6 @@ class CustomUser(AbstractUser):
             return cls.objects.get(pk=pk)
         except cls.DoesNotExist:
             return None
-
 
     @classmethod
     def update(cls, pk, new_first_name, new_last_name, new_email):
@@ -81,9 +71,8 @@ class CustomUser(AbstractUser):
         user.save()
         return user
 
-
     @classmethod
-    def delete(cls, pk):
+    def delete_user(cls, pk):
         """Deletes the user from the database.
 
         Args:
@@ -97,10 +86,11 @@ class CustomUser(AbstractUser):
             user.delete()
             return user
         return None
-    
+
+
 class Team(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
-    users = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam', related_name="teams")
+    users = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam')
     owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_teams")
     description = models.TextField(verbose_name=_("Description"))
 
@@ -174,7 +164,7 @@ class Team(models.Model):
         return team
 
     @classmethod
-    def delete(cls, pk):
+    def delete_team(cls, pk):
         """Deletes the team from the database.
 
         Args:
@@ -206,8 +196,7 @@ class UserTeam(models.Model):
         verbose_name_plural = _("User Teams")
 
     def __str__(self):
-        return f"UserTeam - user: {self.user.username}, team: {self.team.name}"
-    
+        return f"UserTeam - user: {self.user}, team: {self.team}"
 
     @classmethod
     def create(cls, user, team):

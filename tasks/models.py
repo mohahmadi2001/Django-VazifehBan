@@ -4,22 +4,20 @@ from django.utils.translation import gettext as _
 
 class Task(models.Model):
     CHOICES = (
-        ("N_F", "New Feature"),
-        ("Re", "Refactoring"),
-        ("B_F", "Bug Fix"),
-        ("R_D", "Research & Development"),
+        ("ToDo", "To DO"),
+        ("Doing", "Doing"),
+        ("Done", "Done"),
     )
     title = models.CharField(_("Title"), max_length=255)
+    created_at = models.DateTimeField(verbose_name=_("Created Date"),
+                                      auto_now_add=True)
     description = models.TextField(_("Description"))
-    end_date = models.DateTimeField(_("End Date"),
-                                    auto_now=True,
-                                    null=True)
     deadline = models.DateTimeField(_("Dead Line"), auto_now=True)
     sprint = models.ForeignKey("projects.Sprint",
                                verbose_name=_("Sprint ID"),
                                on_delete=models.CASCADE,
                                related_name="tasks")
-    user = models.ForeignKey("accounts.User",
+    user = models.ForeignKey("accounts.CustomUser",
                              verbose_name=_("User"),
                              null=True,
                              on_delete=models.SET_NULL,
@@ -68,7 +66,7 @@ class Comment(models.Model):
     content = models.TextField(_("Content"))
     created_at = models.DateTimeField(_("Created Time"),
                                       auto_now_add=True)
-    user = models.ForeignKey("accounts.User",
+    user = models.ForeignKey("accounts.CustomUser",
                              verbose_name=_("User"),
                              on_delete=models.CASCADE,
                              related_name="comments")
