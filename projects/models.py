@@ -101,7 +101,7 @@ class Sprint(SoftDeleteModel):
                                 verbose_name=_("Project"),
                                 on_delete=models.CASCADE,
                                 related_name="sprints")
-    is_active = models.BooleanField(_("Is Active"), default=True)
+    
 
     class Meta:
         verbose_name = _("Sprint")
