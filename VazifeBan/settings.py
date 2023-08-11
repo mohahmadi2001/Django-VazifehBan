@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'projects',
-    'task',
+    'tasks',
     'core',
 ]
 
@@ -143,3 +143,5 @@ LOGGING = {
         },
     },
 }
+
+AUTH_USER_MODEL = "accounts.CustomUser"

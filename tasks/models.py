@@ -3,28 +3,26 @@ from django.utils.translation import gettext as _
 
 
 class Task(models.Model):
+    CHOICES = (
+        ("ToDo", "To DO"),
+        ("Doing", "Doing"),
+        ("Done", "Done"),
+    )
     title = models.CharField(_("Title"), max_length=255)
+    created_at = models.DateTimeField(verbose_name=_("Created Date"),
+                                      auto_now_add=True)
     description = models.TextField(_("Description"))
-    start_date = models.DateTimeField(_("Start Date"),
-                                      auto_now=True,
-                                      null=True)
-    end_date = models.DateTimeField(_("End Date"),
-                                    auto_now=True,
-                                    null=True)
     deadline = models.DateTimeField(_("Dead Line"), auto_now=True)
     sprint = models.ForeignKey("projects.Sprint",
                                verbose_name=_("Sprint ID"),
                                on_delete=models.CASCADE,
                                related_name="tasks")
-    user = models.ForeignKey("accounts.User",
+    user = models.ForeignKey("accounts.CustomUser",
                              verbose_name=_("User"),
                              null=True,
                              on_delete=models.SET_NULL,
                              related_name="tasks")
-    status = models.ForeignKey("Status",
-                               verbose_name=_("Status"),
-                               null=True,
-                               on_delete=models.SET_NULL)
+    status = models.CharField(_("Status"), choices=CHOICES, max_length=255)
 
     class Meta:
         verbose_name = _("Task")
@@ -46,17 +44,6 @@ class Label(models.Model):
         return self.name
 
 
-class Status(models.Model):
-    name = models.CharField(_("Name"))
-
-    class Meta:
-        verbose_name = _("Status")
-        verbose_name_plural = _("Statuses")
-
-    def __str__(self):
-        return self.name
-
-
 class TaskLabel(models.Model):
     label = models.ForeignKey("Label",
                               verbose_name=_("Label"),
@@ -64,7 +51,7 @@ class TaskLabel(models.Model):
                               on_delete=models.SET_NULL)
     task = models.ForeignKey("Task",
                              verbose_name=_("Task"),
-                             null=True, on_delete=models.SET,
+                             null=True, on_delete=models.SET_NULL,
                              related_name="labels")
 
     class Meta:
@@ -79,7 +66,7 @@ class Comment(models.Model):
     content = models.TextField(_("Content"))
     created_at = models.DateTimeField(_("Created Time"),
                                       auto_now_add=True)
-    user = models.ForeignKey("accounts.User",
+    user = models.ForeignKey("accounts.CustomUser",
                              verbose_name=_("User"),
                              on_delete=models.CASCADE,
                              related_name="comments")

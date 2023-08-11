@@ -7,7 +7,8 @@ class WorkSpace(models.Model):
     title = models.CharField(_("Title"), max_length=50)
     team = models.ForeignKey("accounts.Team",
                              verbose_name=_("Team"),
-                             on_delete=models.CASCADE
+                             on_delete=models.CASCADE,
+                             related_name="workspaces"
                              )
     
     class Meta:
