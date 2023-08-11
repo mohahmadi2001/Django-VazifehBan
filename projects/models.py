@@ -43,6 +43,10 @@ class WorkSpace(models.Model):
         self.title = new_title
         self.save()
     
+    def change_team(self, new_team):
+        self.team = new_team
+        self.save()
+    
 class Project(models.Model):
     title = models.CharField(_("Title"), max_length=50)
     description = models.TextField(_("Description"))
