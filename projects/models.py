@@ -12,6 +12,7 @@ class WorkSpace(models.Model):
                              on_delete=models.CASCADE,
                              related_name="workspaces"
                              )
+    is_active = models.BooleanField(_("Is Active"), default=True)
     
     class Meta:
         verbose_name = _("WorkSpace")
@@ -45,6 +46,10 @@ class WorkSpace(models.Model):
     
     def change_team(self, new_team):
         self.team = new_team
+        self.save()
+    
+    def delete_workspace(self):
+        self.is_active = False
         self.save()
     
 class Project(models.Model):
