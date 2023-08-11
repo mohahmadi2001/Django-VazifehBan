@@ -25,6 +25,7 @@ class SoftDeleteModel(models.Model):
     class Meta:
         abstract = True
         
+        
 class TimeStampMixin:
     started_at = models.DateTimeField(_("Start time"))
     ended_at = models.DateTimeField(_("End time"))
