@@ -54,6 +54,16 @@ class Task(models.Model):
             setattr(task, attr, value)
         task.save()
 
+    @property
+    def all_labels(self: "Task"):
+        labels = self.labels
+        return labels
+    
+    @classmethod
+    def task_status(cls: "Task", status):
+        tasks = cls.objects.filter(status=status)
+        return tasks
+
 class Label(models.Model):
     name = models.CharField(_("Name"),
                             max_length=255)
@@ -68,6 +78,9 @@ class Label(models.Model):
         label = get_object_or_404(Label, pk=id)
         return label
     
+    def all_tasks(self):
+        TaskLabel.objects.filter(task=self.id)
+
     class Meta:
         verbose_name = _("Label")
         verbose_name_plural = _("Labels")
@@ -101,7 +114,7 @@ class TaskLabel(models.Model):
         for attr, value in kwargs.items():
             setattr(task_label, attr, value)
         task_label.save()
-
+        
     class Meta:
         verbose_name = _("Task Label")
         verbose_name_plural = _("Task Labels")
