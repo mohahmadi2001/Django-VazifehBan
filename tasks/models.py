@@ -9,7 +9,7 @@ class Task(models.Model):
         ("Done", "Done"),
     )
     title = models.CharField(_("Title"), max_length=255)
-    created_date = models.DateTimeField(verbose_name=_("Created Date"),
+    created_at = models.DateTimeField(verbose_name=_("Created Date"),
                                         auto_now_add=True)
     description = models.TextField(_("Description"))
     deadline = models.DateTimeField(_("Dead Line"), auto_now=True)
