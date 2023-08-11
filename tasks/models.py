@@ -57,6 +57,14 @@ class Label(models.Model):
     name = models.CharField(_("Name"),
                             max_length=255)
 
+    def create_label(self: "Label", name):
+        label = Label.objects.create(name=name)
+        return label
+    
+    def get_label(self: "Label", id):
+        label = get_object_or_404(Label, pk=id)
+        return label
+    
     class Meta:
         verbose_name = _("Label")
         verbose_name_plural = _("Labels")
