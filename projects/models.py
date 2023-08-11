@@ -102,13 +102,6 @@ class Project(SoftDeleteModel,TimeStampMixin):
     def edit_project(self, **kwargs):
         Project.objects.filter(pk=self.pk).update(**kwargs)
     
-    
-    def get_active_sprints(self):
-        return self.sprints.filter(end_date__gte=timezone.now())
-    
-    def get_completed_sprints(self):
-        return self.sprints.filter(end_date__lt=timezone.now())
-    
     def __str__(self):
         return self.title
     
@@ -125,9 +118,26 @@ class Sprint(SoftDeleteModel,TimeStampMixin):
         verbose_name_plural = _("Sprints")
 
     def __str__(self):
-        return f"Sprint {self.start_date.strftime('%Y-%m-%d')}"
+        return f"Sprint {self.started_at.strftime('%Y-%m-%d')}"
     
+    def create_sprint(self, start_date, end_date, project):
+        """Creates a new sprint.
 
+        Args:
+            start_date (datetime): Start date of the sprint.
+            end_date (datetime): End date of the sprint.
+            project (Project): The associated project for the sprint.
+
+        Returns:
+            Sprint: The newly created sprint object.
+        """
+        sprint = Sprint.objects.create(
+            start_date=start_date,
+            end_date=end_date, 
+            project=project
+        )
+        return sprint
+    
     def get_sprint_info(self):
         active_tasks = self.tasks.filter(end_date__gte=timezone.now())
         completed_tasks = self.tasks.filter(end_date__lt=timezone.now())
@@ -142,3 +152,8 @@ class Sprint(SoftDeleteModel,TimeStampMixin):
     def edit_sprint(self, **kwargs):
         Sprint.objects.filter(pk=self.pk).update(**kwargs)
 
+    def get_active_sprints(self):
+        return self.sprints.filter(end_date__gte=timezone.now())
+    
+    def get_completed_sprints(self):
+        return self.sprints.filter(end_date__lt=timezone.now())
