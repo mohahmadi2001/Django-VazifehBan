@@ -132,6 +132,9 @@ class TaskLabel(models.Model):
             setattr(task_label, attr, value)
         task_label.save()
 
+    def delete_task_label(self):
+        self.delete()
+
     class Meta:
         verbose_name = _("Task Label")
         verbose_name_plural = _("Task Labels")
