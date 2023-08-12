@@ -1,9 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext as _
+from core.models import SoftDeleteModel
 
 
-class CustomUser(AbstractUser):
+class CustomUser(SoftDeleteModel, AbstractUser):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
@@ -73,13 +74,13 @@ class CustomUser(AbstractUser):
 
     @classmethod
     def delete_user(cls, pk):
-        """Deletes the user from the database.
+        """Soft deletes the user from the database.
 
         Args:
             pk (int): Primary key of the user.
 
         Returns:
-            CustomUser: The deleted user object.
+            CustomUser: The soft-deleted user object.
         """
         user = cls.read(pk)
         if user:
@@ -87,10 +88,9 @@ class CustomUser(AbstractUser):
             return user
         return None
 
-
-class Team(models.Model):
+class Team(SoftDeleteModel, models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
-    users = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam', related_name="teams")
+    users = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam')
     owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_teams")
     description = models.TextField(verbose_name=_("Description"))
 
@@ -157,6 +157,7 @@ class Team(models.Model):
         except cls.DoesNotExist:
             raise Team.DoesNotExist(f"Team with pk={pk} does not exist.")
 
+        
         team.name = new_name
         team.owner = new_owner
         team.description = new_description
@@ -165,13 +166,13 @@ class Team(models.Model):
 
     @classmethod
     def delete_team(cls, pk):
-        """Deletes the team from the database.
+        """Soft deletes the team from the database.
 
         Args:
             pk (int): Primary key of the team.
 
         Returns:
-            Team: The deleted team object.
+            Team: The soft-deleted team object.
 
         Raises:
             Team.DoesNotExist: If the team with the given primary key does not exist.
@@ -182,9 +183,8 @@ class Team(models.Model):
         except cls.DoesNotExist:
             raise Team.DoesNotExist(f"Team with pk={pk} does not exist.")
 
-        team.delete()
+        team.delete()  
         return team
-      
 
 class UserTeam(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
