@@ -90,7 +90,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
 
 class Team(SoftDeleteModel, models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
-    users = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam')
+    user = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam', related_name="teams")
     owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_teams")
     description = models.TextField(verbose_name=_("Description"))
 
@@ -187,8 +187,8 @@ class Team(SoftDeleteModel, models.Model):
         return team
 
 class UserTeam(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="users")
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="teams")
     is_owner = models.BooleanField(verbose_name=_("Is Owner"), default=False)
 
     class Meta:
