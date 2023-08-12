@@ -8,7 +8,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
-    teams = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam')
+    team = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam')
     is_staff_override = models.BooleanField(default=False)
     
     class Meta:
