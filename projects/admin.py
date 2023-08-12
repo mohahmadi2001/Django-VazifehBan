@@ -1,3 +1,17 @@
 from django.contrib import admin
+from .models import WorkSpace, Project, Sprint
 
-# Register your models here.
+
+@admin.register(WorkSpace)
+class WorkSpaceAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Sprint)
+class SprintAdmin(admin.ModelAdmin):
+    pass
