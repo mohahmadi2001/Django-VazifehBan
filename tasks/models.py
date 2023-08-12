@@ -95,8 +95,9 @@ class Label(models.Model):
         return label
     
     def all_tasks(self):
-        TaskLabel.objects.filter(task=self.id)
-
+        tasks = list(TaskLabel.objects.select_related("Task").filter(label=self.id).values("task"))
+        return tasks
+    
     class Meta:
         verbose_name = _("Label")
         verbose_name_plural = _("Labels")
