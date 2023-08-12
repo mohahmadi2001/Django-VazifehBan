@@ -19,7 +19,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         return self.is_staff_override 
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.username}"
 
     @classmethod
     def create(cls, first_name, last_name, email):
