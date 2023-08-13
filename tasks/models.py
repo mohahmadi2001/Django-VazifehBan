@@ -42,12 +42,11 @@ class Task(models.Model):
                                    user=user,
                                    status=status)
         return task
-    
+
     @classmethod
     def get_task(cls: "Task", id):
         task = get_object_or_404(Task, pk=id)
         return task
-    
 
     def update_task(self: "Task", task_id, **kwargs):
         task = Task.get_task(task_id)
@@ -59,17 +58,17 @@ class Task(models.Model):
     def all_labels(self: "Task"):
         labels = self.labels
         return labels
-    
+
     @classmethod
     def task_status(cls: "Task", status):
         tasks = cls.objects.filter(status=status)
         return tasks
-    
+
     @property
     def all_attachments(self: "Task"):
         attachments = self.attachments
         return attachments
-    
+
     @property
     def all_comments(self: "Task"):
         comments = self.comments
@@ -79,7 +78,8 @@ class Task(models.Model):
     def all_worktimes(self: "Task"):
         worktimes = self.work_times
         return worktimes
-    
+
+
 class Label(models.Model):
     name = models.CharField(_("Name"),
                             max_length=255)
@@ -88,16 +88,16 @@ class Label(models.Model):
     def create_label(self: "Label", name):
         label = Label.objects.create(name=name)
         return label
-    
+
     @classmethod
     def get_label(self: "Label", id):
         label = get_object_or_404(Label, pk=id)
         return label
-    
+
     def all_tasks(self):
         tasks = list(TaskLabel.objects.select_related("Task").filter(label=self.id).values("task"))
         return tasks
-    
+
     class Meta:
         verbose_name = _("Label")
         verbose_name_plural = _("Labels")
@@ -118,14 +118,14 @@ class TaskLabel(models.Model):
 
     @classmethod
     def create_task_label(cls: "TaskLabel", label_id, task_id):
-            task_label = cls.objects.create(label=label_id, task=task_id)
-            return task_label
-    
+        task_label = cls.objects.create(label=label_id, task=task_id)
+        return task_label
+
     @classmethod
     def get_task_label(cls: "TaskLabel", id):
         task_label = get_object_or_404(TaskLabel, pk=id)
         return task_label
-    
+
     def update_task_label(self: "TaskLabel", id, **kwargs):
         task_label = TaskLabel.get_task_label(id)
         for attr, value in kwargs.items():
@@ -134,6 +134,9 @@ class TaskLabel(models.Model):
 
     def delete_task_label(self):
         self.delete()
+
+    def does_task_label_exist(self):
+        return TaskLabel.objects.filter(label=self.label, task=self.task).exists()
 
     class Meta:
         verbose_name = _("Task Label")
@@ -162,12 +165,12 @@ class Comment(models.Model):
                                      user=user_id,
                                      task=task_id)
         return comment
-    
+
     @classmethod
     def get_comment(cls: "Comment", id):
         comment = get_object_or_404(Comment, pk=id)
         return comment
-    
+
     def update_comment(self: "Comment", id, **kwargs):
         comment = Comment.get_comment(id)
         for attr, value in kwargs.items():
@@ -194,18 +197,17 @@ class Attachment(models.Model):
     def create_attachment(cls: "Attachment", content, task_id):
         attachment = cls.objects.create(content=content, task=task_id)
         return attachment
-    
+
     @classmethod
     def get_attachment(cls: "Attachment", id):
         attachment = get_object_or_404(Attachment, pk=id)
         return attachment
-    
+
     def update_attachment(self: "Attachment", id, **kwargs):
         attachment = Attachment.get_attachment(id)
         for attr, value in kwargs.items():
             setattr(attachment, attr, value)
         attachment.save()
-
 
     class Meta:
         verbose_name = _("Attachment")
@@ -233,7 +235,7 @@ class WorkTime(models.Model):
     def get_worktime(cls: "WorkTime", id):
         worktime = get_object_or_404(WorkTime, pk=id)
         return worktime
-    
+
     def update_worktime(self: "WorkTime", id, **kwargs):
         worktime = WorkTime.get_worktime(id)
         for attr, value in kwargs.items():
