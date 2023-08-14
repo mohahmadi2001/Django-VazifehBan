@@ -9,7 +9,6 @@ class CustomUser(SoftDeleteModel, AbstractUser):
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     team = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam')
-    is_staff_override = models.BooleanField(default=False)
     
     class Meta:
         verbose_name = _("User")
@@ -189,7 +188,6 @@ class Team(SoftDeleteModel, models.Model):
 class UserTeam(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="users")
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="teams")
-    is_owner = models.BooleanField(verbose_name=_("Is Owner"), default=False)
 
     class Meta:
         verbose_name = _("User Team")
