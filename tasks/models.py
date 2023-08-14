@@ -4,7 +4,7 @@ from django.utils.translation import gettext as _
 from core.models import SoftDeleteModel, TimeStampMixin
 
 
-class Task(SoftDeleteModel, TimeStampMixin):
+class Task(SoftDeleteModel, TimeStampMixin, models.Model):
     CHOICES = (
         ("ToDo", "To Do"),
         ("Doing", "Doing"),
@@ -82,7 +82,7 @@ class Task(SoftDeleteModel, TimeStampMixin):
         return worktimes
 
 
-class Label(SoftDeleteModel):
+class Label(SoftDeleteModel, models.Model):
     name = models.CharField(_("Name"),
                             max_length=255)
 
@@ -111,7 +111,7 @@ class Label(SoftDeleteModel):
         return self.name
 
 
-class TaskLabel(SoftDeleteModel):
+class TaskLabel(SoftDeleteModel, models.Model):
     label = models.ForeignKey("Label",
                               verbose_name=_("Label"),
                               null=True,
@@ -151,7 +151,7 @@ class TaskLabel(SoftDeleteModel):
         return self.id
 
 
-class Comment(SoftDeleteModel):
+class Comment(SoftDeleteModel, models.Model):
     content = models.TextField(_("Content"))
     created_at = models.DateTimeField(_("Created Time"),
                                       auto_now_add=True)
@@ -193,7 +193,7 @@ class Comment(SoftDeleteModel):
         return self.content
 
 
-class Attachment(SoftDeleteModel):
+class Attachment(SoftDeleteModel, models.Model):
     content = models.FileField(_("Content"),
                                upload_to="task-attachments")
     task = models.ForeignKey("Task",
@@ -228,7 +228,7 @@ class Attachment(SoftDeleteModel):
         return f"Attachment {self.id}"
 
 
-class WorkTime(SoftDeleteModel):
+class WorkTime(SoftDeleteModel, models.Model):
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True)
     task = models.ForeignKey("Task",
