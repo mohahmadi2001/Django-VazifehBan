@@ -8,7 +8,7 @@ class CustomUserTestCase(TestCase):
             first_name="John",
             last_name="Doe",
             email="john.doe@example.com",
-            is_staff_override=True
+            is_staff=True
         )
 
     def tearDown(self):
@@ -21,7 +21,7 @@ class CustomUserTestCase(TestCase):
             first_name="Jane",
             last_name="Smith",
             email="jane.smith@example.com",
-            is_staff_override=True,
+            is_staff=True,
             username="jane.smith@example.com"  # Set username explicitly
         )
 
@@ -57,7 +57,7 @@ class TeamTestCase(TestCase):
             first_name="John",
             last_name="Doe",
             email="john.doe@example.com",
-            is_staff_override=True
+            is_staff=True
         )
         self.team = Team.objects.create(
             name="Team A",
@@ -105,7 +105,7 @@ class UserTeamTestCase(TestCase):
             first_name="John",
             last_name="Doe",
             email="john.doe@example.com",
-            is_staff_override=True
+            is_staff=True
         )
         self.team = Team.objects.create(
             name="Team A",
@@ -129,7 +129,7 @@ class UserTeamTestCase(TestCase):
             first_name="Jane",
             last_name="Smith",
             email="jane.smith@example.com",
-            is_staff_override=False,
+            is_staff=False,
             username="jane.smith@example.com"
         )
         user_team = UserTeam.create(new_user, team=self.team)
