@@ -1,9 +1,10 @@
 from django.db import models
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
+from core.models import SoftDeleteModel, TimeStampMixin
 
 
-class Task(models.Model):
+class Task(SoftDeleteModel, TimeStampMixin, models.Model):
     CHOICES = (
         ("ToDo", "To Do"),
         ("Doing", "Doing"),
@@ -12,9 +13,7 @@ class Task(models.Model):
     title = models.CharField(_("Title"), max_length=255)
     created_at = models.DateTimeField(verbose_name=_("Created Date"),
                                       auto_now_add=True)
-    start_date = models.DateTimeField(_("Start Date"), auto_now=False, auto_now_add=False)
     description = models.TextField(_("Description"))
-    deadline = models.DateTimeField(_("Dead Line"), auto_now=True)
     sprint = models.ForeignKey("projects.Sprint",
                                verbose_name=_("Sprint ID"),
                                on_delete=models.CASCADE,
@@ -54,6 +53,9 @@ class Task(models.Model):
             setattr(task, attr, value)
         task.save()
 
+    def delete_task(self):
+        self.delete()
+
     @property
     def all_labels(self: "Task"):
         labels = self.labels
@@ -80,7 +82,7 @@ class Task(models.Model):
         return worktimes
 
 
-class Label(models.Model):
+class Label(SoftDeleteModel, models.Model):
     name = models.CharField(_("Name"),
                             max_length=255)
 
@@ -98,6 +100,9 @@ class Label(models.Model):
         tasks = list(TaskLabel.objects.select_related("Task").filter(label=self.id).values("task"))
         return tasks
 
+    def delete_label(self):
+        self.delete()
+
     class Meta:
         verbose_name = _("Label")
         verbose_name_plural = _("Labels")
@@ -106,7 +111,7 @@ class Label(models.Model):
         return self.name
 
 
-class TaskLabel(models.Model):
+class TaskLabel(SoftDeleteModel, models.Model):
     label = models.ForeignKey("Label",
                               verbose_name=_("Label"),
                               null=True,
@@ -146,7 +151,7 @@ class TaskLabel(models.Model):
         return self.id
 
 
-class Comment(models.Model):
+class Comment(SoftDeleteModel, models.Model):
     content = models.TextField(_("Content"))
     created_at = models.DateTimeField(_("Created Time"),
                                       auto_now_add=True)
@@ -177,6 +182,9 @@ class Comment(models.Model):
             setattr(comment, attr, value)
         comment.save()
 
+    def delete_comment(self):
+        self.delete()
+
     class Meta:
         verbose_name = _("Comment")
         verbose_name_plural = _("Comments")
@@ -185,7 +193,7 @@ class Comment(models.Model):
         return self.content
 
 
-class Attachment(models.Model):
+class Attachment(SoftDeleteModel, models.Model):
     content = models.FileField(_("Content"),
                                upload_to="task-attachments")
     task = models.ForeignKey("Task",
@@ -209,6 +217,9 @@ class Attachment(models.Model):
             setattr(attachment, attr, value)
         attachment.save()
 
+    def delete_attachment(self):
+        self.delete()
+
     class Meta:
         verbose_name = _("Attachment")
         verbose_name_plural = _("Attachments")
@@ -217,10 +228,9 @@ class Attachment(models.Model):
         return f"Attachment {self.id}"
 
 
-class WorkTime(models.Model):
+class WorkTime(SoftDeleteModel, models.Model):
     start_date = models.DateTimeField(auto_now_add=True)
-    end_date = models.DateTimeField(auto_now=True,
-                                    null=True)
+    end_date = models.DateTimeField(null=True)
     task = models.ForeignKey("Task",
                              verbose_name=_("Task"),
                              on_delete=models.CASCADE,
@@ -245,6 +255,9 @@ class WorkTime(models.Model):
     def complete_worktime(self: "WorkTime", enddate):
         self.end_date = enddate
         self.save()
+
+    def delete_worktime(self):
+        self.delete()
 
     class Meta:
         verbose_name = _("Work Time")
