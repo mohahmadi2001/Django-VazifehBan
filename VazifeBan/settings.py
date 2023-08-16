@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'accounts',
     'projects',
     'tasks',
@@ -145,3 +146,8 @@ LOGGING = {
 }
 
 AUTH_USER_MODEL = "accounts.CustomUser"
+
+
+REST_FRAMEWORK = {
+    'COERCE_DECIMAL_TO_STRING': False,
+}
