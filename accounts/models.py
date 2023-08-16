@@ -5,9 +5,7 @@ from core.models import SoftDeleteModel
 
 
 class CustomUser(SoftDeleteModel, AbstractUser):
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
+    
     team = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam')
     
     class Meta:
@@ -15,7 +13,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         verbose_name_plural = _("Users")
 
     def get_staff_status(self):
-        return self.is_staff_override 
+        return self.is_staff
 
     def __str__(self):
         return f"{self.username}"
@@ -71,21 +69,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         user.save()
         return user
 
-    @classmethod
-    def delete_user(cls, pk):
-        """Soft deletes the user from the database.
-
-        Args:
-            pk (int): Primary key of the user.
-
-        Returns:
-            CustomUser: The soft-deleted user object.
-        """
-        user = cls.read(pk)
-        if user:
-            user.delete()
-            return user
-        return None
+   
 
 class Team(SoftDeleteModel, models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
@@ -163,28 +147,7 @@ class Team(SoftDeleteModel, models.Model):
         team.save()
         return team
 
-    @classmethod
-    def delete_team(cls, pk):
-        """Soft deletes the team from the database.
-
-        Args:
-            pk (int): Primary key of the team.
-
-        Returns:
-            Team: The soft-deleted team object.
-
-        Raises:
-            Team.DoesNotExist: If the team with the given primary key does not exist.
-        """
-
-        try:
-            team = cls.objects.get(pk=pk)
-        except cls.DoesNotExist:
-            raise Team.DoesNotExist(f"Team with pk={pk} does not exist.")
-
-        team.delete()  
-        return team
-
+    
 class UserTeam(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="users")
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="teams")
