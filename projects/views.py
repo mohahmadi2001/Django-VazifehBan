@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,7 +10,7 @@ import logging
 
 from accounts.models import Team
 from projects.models import WorkSpace
-from .serializers import WorkSpaceSerializer
+from .serializers import WorkSpaceDetailWithProjectsAndTeamSerializer, WorkSpaceSerializer
 from .permissions import IsTeamMember, IsTeamOwner
 
 class WorkSpaceCreateView(CreateAPIView):
@@ -149,3 +150,55 @@ class WorkSpaceEditView(RetrieveUpdateAPIView):
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Workspace updated: {workspace.title}, Team: {workspace.team.name}")
+
+
+class WorkSpaceDetailView(RetrieveAPIView):
+    """
+    View for showing workspace information along with projects and team information.
+
+    **Arguments:**
+        workspace_pk (int): The ID of the workspace to be displayed.
+
+    **Permissions:**
+        IsAuthenticated: The user must be authenticated.
+        IsTeamOwner: The user must be the owner of the workspace.
+
+    **Returns:**
+        A response object with the workspace information, projects, and team information.
+
+    **Raises:**
+        PermissionDenied: If the user does not have permission to view the workspace.
+
+    """
+
+    serializer_class = WorkSpaceDetailWithProjectsAndTeamSerializer
+    permission_classes = [IsAuthenticated, IsTeamOwner]
+
+    def get_queryset(self):
+        """
+        Gets the queryset for the workspaces that the user can view.
+
+        **Returns:**
+            The queryset for the workspaces that the user can view.
+        """
+        workspace_pk = self.kwargs.get('workspace_pk')
+        return WorkSpace.objects.filter(
+            team__members__in=[self.request.user]
+        ).filter(pk=workspace_pk)
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieve the workspace information.
+
+        **Arguments:**
+            request (django.http.HttpRequest): The HTTP request.
+
+        **Raises:**
+            PermissionDenied: If the user does not have permission to view the workspace.
+
+        **Returns:**
+            A response object with the workspace information, projects, and team information.
+        """
+        workspace = self.get_object()
+        serializer = self.get_serializer(workspace)
+        return Response(serializer.data)

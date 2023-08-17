@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
+
+from accounts.models import Team
 from .models import WorkSpace, Project, Sprint
 
 
@@ -42,6 +44,22 @@ class SprintSerializer(serializers.ModelSerializer):
         model = Sprint
         fields = ('id', 'started_at', 'ended_at', 'project',
                   'tasks', 'created_at', 'updated_at')
+        
+
+class WorkSpaceDetailWithProjectsAndTeamSerializer(WorkSpaceSerializer):
+    """
+    Serializer for workspace details with projects and team information.
+
+    Attributes:
+        projects (list): A list of project objects.
+        team (Team): The team object for the workspace.
+    """
+
+    projects = serializers.ListField(
+        child=serializers.SlugRelatedField(slug_field='name', queryset=Project.objects.all())
+    )
+    team = serializers.SlugRelatedField(slug_field='name', queryset=Team.objects.all())
+
         
         
 def get_serialized_object_or_404(model_class, serializer_class, **kwargs):
