@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.generics import RetrieveAPIView
+from rest_framework.generics import DestroyAPIView
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -202,3 +203,26 @@ class WorkSpaceDetailView(RetrieveAPIView):
         workspace = self.get_object()
         serializer = self.get_serializer(workspace)
         return Response(serializer.data)
+    
+
+class WorkSpaceDeleteView(DestroyAPIView):
+    """
+    View for deleting a workspace by the owner.
+
+    Attributes:
+        queryset (QuerySet): The queryset for retrieving the workspace.
+        serializer_class (class): The serializer class to use for deleting the workspace.
+        permission_classes (list): The list of permission classes required for accessing this view.
+    """
+    queryset = WorkSpace.objects.all()
+    serializer_class = WorkSpaceSerializer
+    permission_classes = [IsAuthenticated, IsTeamOwner]
+
+    def destroy(self, request, *args, **kwargs):
+        workspace = self.get_object()
+
+        if not workspace.team.is_owner(request.user):
+            raise PermissionDenied("You are not the owner of this workspace.")
+
+        workspace.soft_delete()
+        return Response({"message": "Workspace deleted successfully"}, status=200)
