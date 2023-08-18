@@ -11,8 +11,8 @@ import logging
 
 from accounts.models import Team
 from projects.models import WorkSpace
-from .serializers import WorkSpaceDetailWithProjectsAndTeamSerializer, WorkSpaceSerializer
-from .permissions import IsTeamMember, IsTeamOwner
+from .serializers import ProjectSerializer, WorkSpaceDetailWithProjectsAndTeamSerializer, WorkSpaceSerializer
+from .permissions import IsTeamMember, IsTeamOwner, IsWorkspaceOwner
 
 class WorkSpaceCreateView(CreateAPIView):
     """
@@ -226,3 +226,59 @@ class WorkSpaceDeleteView(DestroyAPIView):
 
         workspace.soft_delete()
         return Response({"message": "Workspace deleted successfully"}, status=200)
+    
+
+class ProjectCreateView(CreateAPIView):
+    """
+    View for creating a project by workspace owner permission.
+
+    Attributes:
+        serializer_class (class): The serializer class to use for creating a project.
+        permission_classes (list): The list of permission classes required for accessing this view.
+    """
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated, IsWorkspaceOwner]
+
+    def create(self, request, *args, **kwargs):
+        """
+        Creates a new project within a workspace.
+
+        Args:
+            request: The HTTP request.
+            *args: The positional arguments.
+            **kwargs: The keyword arguments.
+
+        Returns:
+            A response object.
+        """
+        workspace = self.get_workspace()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        project = self.perform_create(serializer, workspace)
+        headers = self.get_success_headers(serializer.data)
+        
+        response_data = {
+            "message": "Project created successfully",
+            "project": serializer.data
+        }
+        
+        return Response(response_data, status=201, headers=headers)
+
+    def get_workspace(self):
+        workspace_pk = self.kwargs.get('workspace_pk')
+        workspace = get_object_or_404(WorkSpace, pk=workspace_pk)
+        return workspace
+
+    def perform_create(self, serializer, workspace):
+        """
+        Performs the create operation for the project.
+
+        Args:
+            serializer: The serializer instance.
+            workspace: The workspace associated with the project.
+
+        Returns:
+            The newly created project object.
+        """
+        return serializer.save(workspace=workspace)
