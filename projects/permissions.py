@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import BasePermission
 from rest_framework import permissions
 
@@ -63,3 +64,22 @@ class IsProjectMember(permissions.BasePermission):
     def has_permission(self, request, view):
         project = view.get_project()
         return project.team.members.filter(id=request.user.id).exists()
+
+class IsProjectOwner(BasePermission):
+    """
+    Custom permission to check if a user is the owner of the project.
+    """
+
+    def has_permission(self, request, view):
+        # Check if the user is authenticated
+        if not request.user.is_authenticated:
+            return False
+
+        # Get the project ID from the URL kwargs
+        project_pk = view.kwargs.get('project_pk')
+
+        # Get the project object
+        project = get_object_or_404(Project, pk=project_pk)
+
+        # Check if the user is the owner of the project
+        return project.team.is_owner(request.user)

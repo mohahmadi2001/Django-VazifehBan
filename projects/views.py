@@ -12,7 +12,7 @@ import logging
 from accounts.models import Team
 from projects.models import Project, WorkSpace
 from .serializers import ProjectDetailWithSprintsSerializer, ProjectSerializer, SprintSerializer, WorkSpaceDetailWithProjectsAndTeamSerializer, WorkSpaceSerializer
-from .permissions import IsProjectMember, IsTeamMember, IsTeamOwner, IsWorkspaceOwner
+from .permissions import IsProjectMember, IsProjectOwner, IsTeamMember, IsTeamOwner, IsWorkspaceOwner
 
 class WorkSpaceCreateView(CreateAPIView):
     """
@@ -453,4 +453,120 @@ class ProjectDetailView(RetrieveAPIView):
         """
         project = self.get_object()
         serializer = self.get_serializer(project)
+        self.log_project_view(project)
+
         return Response(serializer.data)
+    
+    def log_project_view(self, project):
+        """
+        Log the viewing of a project.
+
+        Args:
+            project: The viewed project object.
+        """
+        logger = logging.getLogger(__name__)
+        logger.info(f"Project viewed: {project.title}, Team: {project.team.name}")
+
+    
+class ProjectEditView(RetrieveUpdateAPIView):
+    """
+    View for editing project information by owner permission.
+
+    Attributes:
+        serializer_class (class): The serializer class to use for editing project information.
+        permission_classes (list): The list of permission classes required for accessing this view.
+    """
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated, IsProjectOwner]
+
+    def get_queryset(self):
+        """
+        Gets the queryset for the projects that the user can edit.
+
+        Returns:
+            The queryset for the projects that the user can edit.
+        """
+        return Project.objects.filter(team__members=self.request.user)
+
+    def get_object(self):
+        """
+        Retrieves the project object.
+
+        Returns:
+            The project object to edit.
+        """
+        project_pk = self.kwargs.get('project_pk')
+        return get_object_or_404(self.get_queryset(), pk=project_pk)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Updates the project information.
+
+        Args:
+            request: The HTTP request.
+            *args: The positional arguments.
+            **kwargs: The keyword arguments.
+
+        Returns:
+            A response object.
+
+        Raises:
+            PermissionDenied: If the user is not the owner of the project.
+        """
+        project = self.get_object()
+        serializer = self.get_serializer(project, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        if not project.team.is_owner(request.user):
+            raise PermissionDenied("You are not the owner of this project.")
+
+        self.log_project_edit(project)
+
+        self.perform_update(serializer)
+        return Response(serializer.data)
+    
+    def log_project_edit(self, project):
+        """
+        Log the editing of a project.
+
+        Args:
+            project: The edited project object.
+        """
+        logger = logging.getLogger(__name__)
+        logger.info(f"Project edited: {project.title}, Team: {project.team.name}")
+
+
+class ProjectDeleteView(DestroyAPIView):
+    """
+    View for deleting a project by the owner.
+
+    Attributes:
+        queryset (QuerySet): The queryset for retrieving the project.
+        serializer_class (class): The serializer class to use for deleting the project.
+        permission_classes (list): The list of permission classes required for accessing this view.
+    """
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated, IsProjectOwner]
+
+    def destroy(self, request, *args, **kwargs):
+        project = self.get_object()
+
+        if not project.workspace.is_owner(request.user):
+            raise PermissionDenied("You are not the owner of this project's workspace.")
+
+        # Log the deletion of the project
+        self.log_project_deletion(project)
+        
+        project.soft_delete()
+        return Response({"message": "Project deleted successfully"}, status=200)
+    
+    def log_project_deletion(self, project):
+        """
+        Logs the deletion of a project.
+
+        Args:
+            project: The project object being deleted.
+        """
+        logger = logging.getLogger(__name__)
+        logger.info(f"Project deleted: ID {project.id}, Workspace: {project.workspace.title}")
