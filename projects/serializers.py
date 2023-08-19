@@ -40,10 +40,18 @@ class SprintSerializer(serializers.ModelSerializer):
 
     project = serializers.PrimaryKeyRelatedField(read_only=True)
 
+
     class Meta:
         model = Sprint
         fields = ('id', 'started_at', 'ended_at', 'project',
                   'tasks', 'created_at', 'updated_at')
+
+class ProjectDetailWithSprintsSerializer(serializers.ModelSerializer):
+    sprints = SprintSerializer(many=True)
+
+    class Meta:
+        model = Project
+        fields = ('id', 'title', 'description', 'workspace', 'started_at', 'ended_at', 'deadline', 'created_at', 'updated_at', 'sprints')
         
 
 class WorkSpaceDetailWithProjectsAndTeamSerializer(WorkSpaceSerializer):

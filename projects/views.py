@@ -11,8 +11,8 @@ import logging
 
 from accounts.models import Team
 from projects.models import Project, WorkSpace
-from .serializers import ProjectSerializer, SprintSerializer, WorkSpaceDetailWithProjectsAndTeamSerializer, WorkSpaceSerializer
-from .permissions import IsTeamMember, IsTeamOwner, IsWorkspaceOwner
+from .serializers import ProjectDetailWithSprintsSerializer, ProjectSerializer, SprintSerializer, WorkSpaceDetailWithProjectsAndTeamSerializer, WorkSpaceSerializer
+from .permissions import IsProjectMember, IsTeamMember, IsTeamOwner, IsWorkspaceOwner
 
 class WorkSpaceCreateView(CreateAPIView):
     """
@@ -403,3 +403,54 @@ class SprintCreateView(CreateAPIView):
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Sprint created: {sprint.id}, Project: {sprint.project.title}")
+
+
+class ProjectDetailView(RetrieveAPIView):
+    """
+    View for showing project information along with sprints by member permission.
+
+    **Arguments:**
+        project_pk (int): The ID of the project to be displayed.
+
+    **Permissions:**
+        IsAuthenticated: The user must be authenticated.
+        IsProjectMember: The user must be a member of the project.
+
+    **Returns:**
+        A response object with the project information and a list of sprints.
+
+    **Raises:**
+        PermissionDenied: If the user does not have permission to view the project.
+    """
+
+    serializer_class = ProjectDetailWithSprintsSerializer
+    permission_classes = [IsAuthenticated, IsProjectMember]
+
+    def get_queryset(self):
+        """
+        Gets the queryset for the projects that the user can view.
+
+        **Returns:**
+            The queryset for the projects that the user can view.
+        """
+        project_pk = self.kwargs.get('project_pk')
+        return Project.objects.filter(
+            team__members__in=[self.request.user]
+        ).filter(pk=project_pk)
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieve the project information along with sprints.
+
+        **Arguments:**
+            request (django.http.HttpRequest): The HTTP request.
+
+        **Raises:**
+            PermissionDenied: If the user does not have permission to view the project.
+
+        **Returns:**
+            A response object with the project information and a list of sprints.
+        """
+        project = self.get_object()
+        serializer = self.get_serializer(project)
+        return Response(serializer.data)
