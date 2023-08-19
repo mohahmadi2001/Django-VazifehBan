@@ -618,45 +618,44 @@ class SprintEditView(RetrieveUpdateAPIView):
         logger.info(f"Sprint updated: {sprint.title}, Project: {sprint.project.title}")
 
 
-class SprintDetailView(RetrieveAPIView):
+class SprintDeleteView(DestroyAPIView):
     """
-    View for showing sprint information along with tasks by member permission.
+    View for deleting a sprint by owner permission.
 
     Attributes:
-        serializer_class (class): The serializer class to use for displaying sprint information.
+        queryset (QuerySet): The queryset for retrieving the sprint.
+        serializer_class (class): The serializer class to use for deleting the sprint.
         permission_classes (list): The list of permission classes required for accessing this view.
     """
+    queryset = Sprint.objects.all()
     serializer_class = SprintDetailSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsProjectOwner]
 
-    def get_object(self):
-        sprint_id = self.kwargs.get('sprint_id')
-        sprint = Sprint.objects.filter(pk=sprint_id).first()
+    def destroy(self, request, *args, **kwargs):
+        sprint = self.get_object()
 
-        if not sprint:
-            raise PermissionDenied("Sprint not found.")
+        # Check if the user has permission to delete this sprint
+        if not sprint.project.workspace.team.is_owner(request.user):
+            raise PermissionDenied("You are not the owner of this sprint.")
 
-        # Check if the user has permission to access this sprint
-        if not self.request.user in sprint.project.workspace.team.members.all():
-            raise PermissionDenied("You do not have permission to access this sprint.")
+        # Add a confirmation step
+        if not request.user.confirm_delete(sprint):
+            return Response({"message": "Deletion cancelled"}, status=400)
 
-        return sprint
+        # Perform soft delete on the sprint
+        sprint.soft_delete()
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
+        # Log sprint deletion
+        self.log_sprint_deletion(sprint)
 
-        # Log sprint retrieval
-        self.log_sprint_retrieval(instance)
+        return Response({"message": "Sprint deleted successfully"}, status=200)
 
-        return Response(serializer.data)
-
-    def log_sprint_retrieval(self, sprint):
+    def log_sprint_deletion(self, sprint):
         """
-        Logs the retrieval of a sprint.
+        Logs the deletion of a sprint.
 
         Args:
-            sprint: The retrieved sprint object.
+            sprint: The deleted sprint object.
         """
         logger = logging.getLogger(__name__)
-        logger.info(f"Sprint retrieved: {sprint.title}, Team: {sprint.project.workspace.team.name}")
+        logger.info(f"Sprint deleted: {sprint.title}, Team: {sprint.project.workspace.team.name}")
