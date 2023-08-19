@@ -10,7 +10,7 @@ from rest_framework.exceptions import PermissionDenied
 import logging
 
 from accounts.models import Team
-from projects.models import Project, WorkSpace
+from projects.models import Project, Sprint, WorkSpace
 from .serializers import ProjectDetailWithSprintsSerializer, ProjectSerializer, SprintSerializer, WorkSpaceDetailWithProjectsAndTeamSerializer, WorkSpaceSerializer
 from .permissions import IsProjectMember, IsProjectOwner, IsTeamMember, IsTeamOwner, IsWorkspaceOwner
 
@@ -570,3 +570,49 @@ class ProjectDeleteView(DestroyAPIView):
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Project deleted: ID {project.id}, Workspace: {project.workspace.title}")
+
+class SprintEditView(RetrieveUpdateAPIView):
+    """
+    View for editing a sprint by the owner.
+
+    Attributes:
+        serializer_class (class): The serializer class to use for editing the sprint.
+        permission_classes (list): The list of permission classes required for accessing this view.
+    """
+    serializer_class = SprintSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Gets the queryset for retrieving the sprint.
+
+        **Returns:**
+            The queryset for retrieving the sprint.
+        """
+        sprint_id = self.kwargs.get('sprint_id')
+        return Sprint.objects.filter(pk=sprint_id)
+
+    def update(self, request, *args, **kwargs):
+        sprint = self.get_object()
+
+        if not sprint.project.workspace.team.is_owner(request.user):
+            raise PermissionDenied("You are not the owner of this sprint's team.")
+
+        serializer = self.get_serializer(sprint, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # You can add logging here if needed
+        self.log_sprint_update(sprint)
+
+        return Response(serializer.data)
+
+    def log_sprint_update(self, sprint):
+        """
+        Logs the editing of a sprint.
+
+        Args:
+            sprint: The newly edited sprint object.
+        """
+        logger = logging.getLogger(__name__)
+        logger.info(f"Sprint updated: {sprint.title}, Project: {sprint.project.title}")
