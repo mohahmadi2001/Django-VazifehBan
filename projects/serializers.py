@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 
 from accounts.models import Team
 from .models import WorkSpace, Project, Sprint
+from tasks import Task
 
 
 class WorkSpaceSerializer(serializers.ModelSerializer):
@@ -45,6 +46,18 @@ class SprintSerializer(serializers.ModelSerializer):
         model = Sprint
         fields = ('id', 'started_at', 'ended_at', 'project',
                   'tasks', 'created_at', 'updated_at')
+        
+class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = ('id', 'title', 'description', 'status', 'start_date', 'end_date')
+
+class SprintDetailSerializer(serializers.ModelSerializer):
+    tasks = TaskSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Sprint
+        fields = ('id', 'title', 'start_date', 'end_date', 'tasks')
 
 class ProjectDetailWithSprintsSerializer(serializers.ModelSerializer):
     sprints = SprintSerializer(many=True)
