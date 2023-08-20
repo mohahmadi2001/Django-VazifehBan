@@ -535,41 +535,50 @@ class ProjectEditView(RetrieveUpdateAPIView):
         logger = logging.getLogger(__name__)
         logger.info(f"Project edited: {project.title}, Team: {project.team.name}")
 
-
-class ProjectDeleteView(DestroyAPIView):
+class SprintDetailView(RetrieveAPIView):
     """
-    View for deleting a project by the owner.
+    View for showing sprint information along with tasks by member permission.
 
     Attributes:
-        queryset (QuerySet): The queryset for retrieving the project.
-        serializer_class (class): The serializer class to use for deleting the project.
+        serializer_class (class): The serializer class to use for displaying sprint information.
         permission_classes (list): The list of permission classes required for accessing this view.
     """
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    permission_classes = [IsAuthenticated, IsProjectOwner]
+    serializer_class = SprintDetailSerializer
+    permission_classes = [IsAuthenticated]
 
-    def destroy(self, request, *args, **kwargs):
-        project = self.get_object()
+    def get_object(self):
+        sprint_id = self.kwargs.get('sprint_id')
+        sprint = Sprint.objects.filter(pk=sprint_id).first()
 
-        if not project.workspace.is_owner(request.user):
-            raise PermissionDenied("You are not the owner of this project's workspace.")
+        if not sprint:
+            raise PermissionDenied("Sprint not found.")
 
-        # Log the deletion of the project
-        self.log_project_deletion(project)
-        
-        project.soft_delete()
-        return Response({"message": "Project deleted successfully"}, status=200)
-    
-    def log_project_deletion(self, project):
+        # Check if the user has permission to access this sprint
+        if not self.request.user in sprint.project.workspace.team.members.all():
+            raise PermissionDenied("You do not have permission to access this sprint.")
+
+        return sprint
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+
+        # Log sprint retrieval
+        self.log_sprint_retrieval(instance)
+
+        return Response(serializer.data)
+
+    def log_sprint_retrieval(self, sprint):
         """
-        Logs the deletion of a project.
+        Logs the retrieval of a sprint.
 
         Args:
-            project: The project object being deleted.
+            sprint: The retrieved sprint object.
         """
         logger = logging.getLogger(__name__)
-        logger.info(f"Project deleted: ID {project.id}, Workspace: {project.workspace.title}")
+        logger.info(f"Sprint retrieved: {sprint.title}, Team: {sprint.project.workspace.team.name}")
+    
+
 
 class SprintEditView(RetrieveUpdateAPIView):
     """
