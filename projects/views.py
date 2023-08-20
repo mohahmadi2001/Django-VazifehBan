@@ -42,20 +42,29 @@ class WorkSpaceCreateView(CreateAPIView):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        workspace = self.perform_create(serializer)
+        team = self.get_team()  # Use the get_team method
+        workspace = self.perform_create(serializer, team)
         headers = self.get_success_headers(serializer.data)
         response_data = {
             "message": "Workspace created successfully",
             "workspace": serializer.data
         }
+        self.log_workspace_creation(workspace)  # Call the log method
         return Response(response_data, status=201, headers=headers)
 
-    def perform_create(self, serializer) :
+    def get_team(self):
+        # Example: Extract team from request data
+        team_pk = self.request.data.get('team')
+        team = get_object_or_404(Team, pk=team_pk)
+        return team
+
+    def perform_create(self, serializer, team):
         """
         Performs the create operation.
 
         Args:
             serializer (Serializer): The serializer instance.
+            team (Team): The team associated with the request.
 
         Returns:
             The newly created object.
@@ -63,17 +72,11 @@ class WorkSpaceCreateView(CreateAPIView):
         Raises:
             PermissionDenied: If the user is not the owner of the team.
         """
-        team_pk = serializer.validated_data.get('team')
-        team = get_object_or_404(Team, pk=team_pk)
-        
-        if not team.exists():
-            raise PermissionDenied("The team does not exist.")
-        
         if not team.is_member(self.request.user):
             raise PermissionDenied("You must be a member of the team to create a workspace.")
-        
+
         return serializer.save(team=team)
-    
+
     def log_workspace_creation(self, workspace):
         """
         Logs the creation of a workspace.
@@ -83,7 +86,6 @@ class WorkSpaceCreateView(CreateAPIView):
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Workspace created: {workspace.title}, Team: {workspace.team.name}")
-
 
 class WorkSpaceEditView(RetrieveUpdateAPIView):
     """
@@ -175,7 +177,10 @@ class WorkSpaceDetailView(RetrieveAPIView):
     serializer_class = WorkSpaceDetailWithProjectsAndTeamSerializer
     permission_classes = [IsAuthenticated, IsTeamOwner]
 
-    
+    # Add the get_team method
+    def get_team(self):
+        # Extract team from the workspace object
+        return self.get_object().team
 
     def get_queryset(self):
         """
@@ -186,9 +191,11 @@ class WorkSpaceDetailView(RetrieveAPIView):
         """
         workspace_pk = self.kwargs.get('workspace_pk')
         return WorkSpace.objects.filter(
-            team__members__in=[self.request.user]
-        ).filter(pk=workspace_pk)
-
+            pk=workspace_pk,
+            team__members=self.request.user
+        )
+    
+    
     def get(self, request, *args, **kwargs):
         """
         Retrieve the workspace information.
@@ -207,10 +214,8 @@ class WorkSpaceDetailView(RetrieveAPIView):
 
         self.log_workspace_retrieval(workspace)
 
-
         return Response(serializer.data)
-    
-    
+
     def log_workspace_retrieval(self, workspace):
         """
         Logs the retrieval of workspace information.
@@ -220,7 +225,7 @@ class WorkSpaceDetailView(RetrieveAPIView):
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Workspace retrieved: ID {workspace.id}, Team: {workspace.team.name}")
-    
+
 
 class WorkSpaceDeleteView(DestroyAPIView):
     """
