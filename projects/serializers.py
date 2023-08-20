@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 
 from accounts.models import Team
 from .models import WorkSpace, Project, Sprint
-from tasks import Task
+from tasks.models import Task
 
 
 class WorkSpaceSerializer(serializers.ModelSerializer):
