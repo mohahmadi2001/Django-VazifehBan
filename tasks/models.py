@@ -53,7 +53,6 @@ class Task(SoftDeleteModel, TimeStampMixin):
             setattr(task, attr, value)
         task.save()
 
-
     @property
     def all_labels(self: "Task"):
         labels = self.labels
@@ -98,8 +97,6 @@ class Label(SoftDeleteModel):
         tasks = list(TaskLabel.objects.select_related("Task").filter(label=self.id).values("task"))
         return tasks
 
-
-
     class Meta:
         verbose_name = _("Label")
         verbose_name_plural = _("Labels")
@@ -133,8 +130,6 @@ class TaskLabel(SoftDeleteModel):
         for attr, value in kwargs.items():
             setattr(task_label, attr, value)
         task_label.save()
-
-
 
     def does_task_label_exist(self):
         return TaskLabel.objects.filter(label=self.label, task=self.task).exists()
@@ -177,8 +172,6 @@ class Comment(SoftDeleteModel):
         for attr, value in kwargs.items():
             setattr(comment, attr, value)
         comment.save()
-
-
 
     class Meta:
         verbose_name = _("Comment")
@@ -247,8 +240,6 @@ class WorkTime(SoftDeleteModel):
     def complete_worktime(self: "WorkTime", enddate):
         self.end_date = enddate
         self.save()
-
-
 
     class Meta:
         verbose_name = _("Work Time")
