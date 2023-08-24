@@ -12,7 +12,7 @@ from .serializers import (
                         )
 from rest_framework.permissions import AllowAny
 
-from djoser.serializers import UserDeleteSerializer
+from djoser.serializers import UserDeleteSerializer,UserSerializer
 
 User = get_user_model()
 
@@ -93,3 +93,9 @@ class UserDeleteView(APIView):
         user = request.user
         user.delete()
         return Response({"message": "User deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    
+
+class UserDetailView(APIView):
+    def get(self, request, *args, **kwargs):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
