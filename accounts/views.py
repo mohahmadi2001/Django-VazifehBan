@@ -1,17 +1,85 @@
-from .serializers import MyTokenObtainPairSerializer
-from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import RegisterSerializer
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework import generics
-from .models import CustomUser
+from rest_framework import status
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
+from .serializers import (
+                          CustomRegistrationSerializer,
+                          UserUpdateSerializer,
+                          CustomSetPasswordSerializer,
+                        )
+from rest_framework.permissions import AllowAny
+
+User = get_user_model()
+
+class UserRegistrationView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = CustomRegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        is_student = serializer.validated_data.get('is_student')
+        student_number = serializer.validated_data.get('student_number')
+        if is_student and student_number is None:
+            return Response(
+                {"error": "Student number is required for students."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        try:
+            validate_password(serializer.validated_data.get('password'))
+        except ValidationError as e:
+            return Response(
+                {"error": e.messages},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user = serializer.save()
+        if user is None:
+            return Response(
+                {"error": "User registration failed."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(
+            {"message": "User registered successfully."},
+            status=status.HTTP_201_CREATED
+        )
 
 
-class MyObtainTokenPairView(TokenObtainPairView):
-    permission_classes = (AllowAny,)
-    serializer_class = MyTokenObtainPairSerializer
+
+class UserUpdateView(APIView):
+    serializer_class = UserUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def put(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.serializer_class(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
-class RegisterView(generics.CreateAPIView):
-    queryset = CustomUser.objects.all()
-    permission_classes = (AllowAny,)
-    serializer_class = RegisterSerializer
+class CustomSetPasswordView(APIView):
+    serializer_class = CustomSetPasswordSerializer
+
+    def put(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = self.request.user
+
+        if not user.check_password(serializer.validated_data['old_password']):
+            return Response({"old_password": "Wrong password."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+
+        return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
+

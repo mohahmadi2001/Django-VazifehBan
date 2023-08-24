@@ -162,9 +162,24 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.TokenAuthentication",
     ),
 }
 
 
+DJOSER = {
+
+    'LOGIN_FIELD': 'username',
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'SET_PASSWORD_RETYPE': True,
+    'PASSWORD_CHANGE_URL': 'password/change/',
+    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/',
+    'SERIALIZERS': {
+        'user_create': 'accounts.serializers.CustomRegistrationSerializer',
+        'user_update': 'accounts.serializers.UserUpdateSerializer',
+        'set_password': 'djoser.serializers.SetPasswordSerializer',
+    },
+    
+}
