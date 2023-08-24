@@ -152,3 +152,16 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 REST_FRAMEWORK = {
     'COERCE_DECIMAL_TO_STRING': False,
 }
+
+
+#djoser
+
+DJOSER = {
+    'LOGIN_FIELD': 'username',  
+    'USER_CREATE_PASSWORD_RETYPE': True,  
+    'SERIALIZERS': {
+        'user_create': 'path.to.your.custom.serializers.UserCreateSerializer',  
+        'user': 'path.to.your.custom.serializers.UserSerializer',    
+        'current_user': 'djoser.serializers.UserSerializer',     
+    },
+}
