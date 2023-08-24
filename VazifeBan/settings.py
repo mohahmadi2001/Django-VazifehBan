@@ -180,6 +180,7 @@ DJOSER = {
         'user_create': 'accounts.serializers.CustomRegistrationSerializer',
         'user_update': 'accounts.serializers.UserUpdateSerializer',
         'set_password': 'djoser.serializers.SetPasswordSerializer',
+        'user_delete': 'djoser.serializers.UserDeleteSerializer',
     },
     
 }
