@@ -3,6 +3,9 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from core.models import SoftDeleteModel,TimeStampMixin
 from tasks.models import Task
+from accounts.models import Team
+from django.utils import timezone
+
 
 
 class WorkSpace(SoftDeleteModel):
@@ -58,6 +61,7 @@ class Project(SoftDeleteModel,TimeStampMixin):
                                   verbose_name=_("WorkSpace"),
                                   on_delete=models.CASCADE,
                                   related_name="projects")
+    team = models.ForeignKey(Team, verbose_name=_("Team"), on_delete=models.CASCADE, related_name="projects", default=1)
     
     class Meta:
         verbose_name = _("Project")
@@ -103,12 +107,14 @@ class Project(SoftDeleteModel,TimeStampMixin):
         return self.title
     
     
-class Sprint(SoftDeleteModel,TimeStampMixin):
+class Sprint(SoftDeleteModel, TimeStampMixin):
     project = models.ForeignKey("Project",
                                 verbose_name=_("Project"),
                                 on_delete=models.CASCADE,
                                 related_name="sprints")
     
+    started_at = models.DateTimeField(verbose_name=_("Started At"), default=timezone.now)
+
 
     class Meta:
         verbose_name = _("Sprint")
@@ -116,7 +122,7 @@ class Sprint(SoftDeleteModel,TimeStampMixin):
 
     def __str__(self):
         return f"Sprint {self.started_at.strftime('%Y-%m-%d')}"
-    
+
     def create_sprint(self, start_date, end_date, project):
         """Creates a new sprint.
 
@@ -129,12 +135,12 @@ class Sprint(SoftDeleteModel,TimeStampMixin):
             Sprint: The newly created sprint object.
         """
         sprint = Sprint.objects.create(
-            start_date=start_date,
-            end_date=end_date, 
+            started_at=start_date,
+            ended_at=end_date, 
             project=project
         )
         return sprint
-    
+
     def get_sprint_info(self):
         active_tasks = self.tasks.filter(end_date__gte=timezone.now())
         completed_tasks = self.tasks.filter(end_date__lt=timezone.now())
@@ -148,5 +154,3 @@ class Sprint(SoftDeleteModel,TimeStampMixin):
 
     def edit_sprint(self, **kwargs):
         Sprint.objects.filter(pk=self.pk).update(**kwargs)
-
-    

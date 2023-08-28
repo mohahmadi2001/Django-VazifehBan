@@ -7,46 +7,29 @@ from tasks.models import Task
 
 
 class WorkSpaceSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the WorkSpace model.
-    
-    Serializes the WorkSpace model and specifies the fields
-    to include in the response.
-    """
+    team = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=Team.objects.all(),
+        required=False  # Make it not required for creating workspaces
+    )
+
     class Meta:
         model = WorkSpace
-        fields = ('id', 'title', 'team', 'created_at', 'updated_at')
-
+        fields = '__all__'
 
 class ProjectSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Project model.
-    
-    Serializes the Project model and specifies the fields to include in the response.
-    """
-
     class Meta:
         model = Project
-        fields = ('id', 'title', 'description', 'workspace',
-                  'started_at', 'ended_at', 'deadline',
-                  'created_at', 'updated_at')
-
+        fields = '__all__'
 
 class SprintSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Sprint model.
-    
-    Serializes the Sprint model and specifies the fields to include in the response.
-    """
-
-    project = serializers.PrimaryKeyRelatedField(read_only=True)
-
+    started_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
 
     class Meta:
         model = Sprint
-        fields = ('id', 'started_at', 'ended_at', 'project',
-                  'tasks', 'created_at', 'updated_at')
-        
+        fields = '__all__'
+
+
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
@@ -64,8 +47,8 @@ class ProjectDetailWithSprintsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ('id', 'title', 'description', 'workspace', 'started_at', 'ended_at', 'deadline', 'created_at', 'updated_at', 'sprints')
-        
+        fields = ('id', 'title', 'description', 'workspace', 'start_date', 'end_date', 'deadline', 'created_at', 'updated_at', 'sprints')
+
 
 class WorkSpaceDetailWithProjectsAndTeamSerializer(WorkSpaceSerializer):
     """
@@ -158,3 +141,11 @@ def get_sprint_by_id(sprint_id: int) -> dict:
         - Http404: If no sprint with the specified ID is found.
     """
     return get_serialized_object_or_404(Sprint, SprintSerializer, pk=sprint_id)
+
+from rest_framework import serializers
+from accounts.models import Team  # Import your Team model here
+
+class TeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = '__all__'

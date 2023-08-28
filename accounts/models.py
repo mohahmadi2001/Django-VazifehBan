@@ -6,7 +6,7 @@ from core.models import SoftDeleteModel
 
 class CustomUser(SoftDeleteModel, AbstractUser):
     
-    team = models.ManyToManyField('Team', verbose_name=_("Teams"), through='UserTeam')
+    teams = models.ManyToManyField('Team', through='UserTeam', related_name='team_members', verbose_name=_("Teams"))
     
     class Meta:
         verbose_name = _("User")
@@ -17,6 +17,20 @@ class CustomUser(SoftDeleteModel, AbstractUser):
 
     def __str__(self):
         return f"{self.username}"
+    
+    def has_permission(self, permission_codename):
+        """
+        Returns True if the user has the specified permission.
+
+        Args:
+            permission_codename: The code name of the permission.
+
+        Returns:
+            True if the user has the permission, False otherwise.
+        """
+        if permission_codename == 'workspaces.view':
+            return True
+        return super().has_permission(permission_codename)
 
     @classmethod
     def create(cls, first_name, last_name, email):
@@ -73,9 +87,11 @@ class CustomUser(SoftDeleteModel, AbstractUser):
 
 class Team(SoftDeleteModel, models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
-    user = models.ManyToManyField(CustomUser, verbose_name=_("Users"), through='UserTeam', related_name="teams")
+    members = models.ManyToManyField(CustomUser, through='UserTeam', related_name="teams_as_member", verbose_name=_("Users"))
     owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_teams")
     description = models.TextField(verbose_name=_("Description"))
+    title = models.CharField(max_length=255, default=' Title')
+
 
     class Meta:
         verbose_name = _("Team")
@@ -83,6 +99,22 @@ class Team(SoftDeleteModel, models.Model):
 
     def __str__(self):
         return self.name
+    
+    def is_member(self, user):
+        """
+        Check if a user is a member of this team.
+
+        Args:
+            user (User): The user to check for membership.
+
+        Returns:
+            bool: True if the user is a member of this team, False otherwise.
+        """
+        return self.members.filter(id=user.id).exists()
+    
+    def is_owner(self, user):
+        """Check if a user is the owner of the team."""
+        return self.owner == user
     
     @classmethod
     def create(cls, name, owner, description):
@@ -149,8 +181,8 @@ class Team(SoftDeleteModel, models.Model):
 
     
 class UserTeam(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="users")
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="teams")
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_teams")
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_users")
 
     class Meta:
         verbose_name = _("User Team")

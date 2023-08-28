@@ -1,306 +1,283 @@
-from django.shortcuts import render, get_object_or_404
-from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.generics import RetrieveAPIView
-from rest_framework.generics import DestroyAPIView
-from rest_framework.generics import CreateAPIView
+  
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
-
-import logging
 
 from accounts.models import Team
-from projects.models import Project, Sprint, WorkSpace
-from .serializers import ProjectDetailWithSprintsSerializer, ProjectSerializer, SprintDetailSerializer, SprintSerializer, WorkSpaceDetailWithProjectsAndTeamSerializer, WorkSpaceSerializer
-from .permissions import IsProjectMember, IsProjectOwner, IsTeamMember, IsTeamOwner, IsWorkspaceOwner
+from .models import Project, Sprint, WorkSpace
+from .serializers import ProjectSerializer, SprintSerializer, TeamSerializer, WorkSpaceSerializer
+from .permissions import IsProjectMember, IsSprintOwner, IsTeamMember, IsTeamMemberOrOwner, IsTeamOwner
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
+from rest_framework import status
+import logging
+from rest_framework.permissions import AllowAny
+logger = logging.getLogger(__name__)
 
-class WorkSpaceCreateView(CreateAPIView):
+
+
+
+class WorkSpaceViewSet(viewsets.ModelViewSet):
     """
-    View for creating a WorkSpace for a particular team with owner's permission.
+    A ViewSet for creating, retrieving, updating, and deleting workspaces.
+
+    This ViewSet allows you to perform CRUD operations on workspace objects. Workspaces
+    are associated with projects and have various permissions depending on the user's role.
 
     Attributes:
-        serializer_class (class): The serializer class to use for creating a workspace.
-        permission_classes (list): The list of permission classes required for accessing this view.
+        serializer_class (class): The serializer class for serializing workspace objects.
+        lookup_field (str): The field to use when looking up workspace objects.
+        logger (Logger): The logger instance for logging workspace-related actions.
     """
+
     serializer_class = WorkSpaceSerializer
-    permission_classes = [IsAuthenticated, IsTeamMember, IsTeamOwner]
+    # permission_classes = [IsTeamMemberOrOwner]
+    lookup_field = 'pk'  
+    logger = logging.getLogger(__name__)
 
-    def create(self, request, *args, **kwargs) -> Response:
+    def get_queryset(self):
         """
-        Creates a new WorkSpace.
-
-        Args:
-            request (HttpRequest): The HTTP request.
-            *args: The positional arguments.
-            **kwargs: The keyword arguments.
+        Get the queryset for the workspaces based on user role/permissions.
 
         Returns:
-            A response object.
-
-        Raises:
-            PermissionDenied: If the user is not the owner of the team.
+            QuerySet: A queryset of workspace objects filtered based on user permissions.
         """
+        user = self.request.user
+        if user.is_authenticated:
+            if user.is_superuser:
+                # Superuser can see all workspaces
+                return WorkSpace.objects.all()
+            elif user.has_perm('workspaces.view_workspace'):
+                # Users with permission to view workspaces
+                return WorkSpace.objects.all()
+            elif user.has_perm('workspaces.change_workspace'):
+                # Users with permission to change workspaces (editors)
+                return WorkSpace.objects.filter(editors=user)
+            elif user.has_perm('workspaces.add_workspace'):
+                # Users with permission to add workspaces (contributors)
+                return WorkSpace.objects.filter(contributors=user)
+        # If the user doesn't have any relevant permissions, return an empty queryset or handle as needed
+        return WorkSpace.objects.none()
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new workspace within a project.
+
+        Args:
+            request (HttpRequest): The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Response: A response indicating the result of the workspace creation.
+        """
+        user = self.request.user
+        project = self.get_project()
+        if not user.has_perm('workspaces.add_workspace'):
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        team = self.get_team()  # Use the get_team method
-        workspace = self.perform_create(serializer, team)
-        headers = self.get_success_headers(serializer.data)
+        
+        # Set the 'team' field of the workspace before saving
+        workspace = serializer.save(project=project, team=project.team)
+        
         response_data = {
             "message": "Workspace created successfully",
             "workspace": serializer.data
         }
-        self.log_workspace_creation(workspace)  # Call the log method
-        return Response(response_data, status=201, headers=headers)
-
-    def get_team(self):
-        # Example: Extract team from request data
-        team_pk = self.request.data.get('team')
-        team = get_object_or_404(Team, pk=team_pk)
-        return team
-
-    def perform_create(self, serializer, team):
+        self.log_workspace_creation(workspace)
+        return Response(response_data, status=status.HTTP_201_CREATED)
+    
+    def retrieve(self, request, *args, **kwargs):
         """
-        Performs the create operation.
+        Retrieve workspace information.
 
         Args:
-            serializer (Serializer): The serializer instance.
-            team (Team): The team associated with the request.
+            request (HttpRequest): The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            The newly created object.
-
-        Raises:
-            PermissionDenied: If the user is not the owner of the team.
+            Response: A response containing the serialized workspace data.
         """
-        if not team.is_member(self.request.user):
-            raise PermissionDenied("You must be a member of the team to create a workspace.")
-
-        return serializer.save(team=team)
-
-    def log_workspace_creation(self, workspace):
-        """
-        Logs the creation of a workspace.
-
-        Args:
-            workspace: The newly created workspace object.
-        """
-        logger = logging.getLogger(__name__)
-        logger.info(f"Workspace created: {workspace.title}, Team: {workspace.team.name}")
-
-class WorkSpaceEditView(RetrieveUpdateAPIView):
-    """
-    View for editing workspace information by user permission.
-
-    **Arguments:**
-        team_pk (int): The ID of the team that the workspace belongs to.
-        workspace_pk (int): The ID of the workspace to be edited.
-
-    **Permissions:**
-        IsAuthenticated: The user must be authenticated.
-        IsTeamMember: The user must be a member of the team that the workspace belongs to.
-
-    **Returns:**
-        A response object with the updated workspace information.
-
-    **Raises:**
-        PermissionDenied: If the user does not have permission to edit the workspace.
-
-    """
-
-    serializer_class = WorkSpaceSerializer
-    permission_classes = [IsAuthenticated, IsTeamMember]
-
-    def get_queryset(self):
-        """
-        Gets the queryset for the workspaces that the user can edit.
-
-        **Returns:**
-            The queryset for the workspaces that the user can edit.
-        """
-        team_pk = self.kwargs.get('team_pk')
-        workspace_pk = self.kwargs.get('workspace_pk')
-        return WorkSpace.objects.filter(team__pk=team_pk, pk=workspace_pk)
+        workspace = self.get_object()
+        serializer = self.get_serializer(workspace)
+        self.log_workspace_view(workspace)
+        return Response(serializer.data)
 
     def update(self, request, *args, **kwargs):
         """
-        Updates the workspace information.
-
-        **Arguments:**
-            request (django.http.HttpRequest): The HTTP request.
-
-        **Raises:**
-            PermissionDenied: If the user does not have permission to edit the workspace.
-
-        **Returns:**
-            A response object with the updated workspace information.
+        Update workspace information.
         """
         workspace = self.get_object()
         serializer = self.get_serializer(workspace, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-
-        if not workspace.team.is_member(request.user):
-            raise PermissionDenied("You are not a member of this team.")
-
+        if not workspace.project.editors.filter(id=request.user.id).exists():
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        self.log_workspace_edit(workspace)
         self.perform_update(serializer)
         return Response(serializer.data)
 
-    def log_workspace_update(self, workspace):
+    def destroy(self, request, *args, **kwargs):
         """
-        Logs the editing of a workspace.
+        Delete a workspace.
+        """
+        workspace = self.get_object()
+        if not workspace.project.editors.filter(id=request.user.id).exists():
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        self.log_workspace_deletion(workspace)
+        workspace.soft_delete()
+        return Response({"message": "Workspace deleted successfully"}, status=status.HTTP_200_OK)
 
-        Args:
-            workspace: The newly edited workspace object.
+    def get_project(self):
+        project_pk = self.kwargs.get('project_pk')
+        project = get_object_or_404(Project, pk=project_pk)
+        return project
+
+    def perform_create(self, serializer, project):
+        """
+        Perform the create operation for the workspace.
+        """
+        return serializer.save(project=project)
+    
+    
+
+    def log_workspace_creation(self, workspace):
+        """
+        Log the creation of a workspace.
         """
         logger = logging.getLogger(__name__)
-        logger.info(f"Workspace updated: {workspace.title}, Team: {workspace.team.name}")
+        logger.info(f"Workspace created: {workspace.title}, Project: {workspace.project.title}")
+
+    def log_workspace_view(self, workspace):
+        project_title = ""
+        if hasattr(workspace, "project"):
+            project_title = workspace.project.title
+        
+        logger.info("Workspace viewed: %s, Project: %s", workspace.title, project_title)
+
+    def log_workspace_edit(self, workspace):
+        """
+        Log the editing of a workspace.
+        """
+        logger = logging.getLogger(__name__)
+        logger.info(f"Workspace edited: {workspace.title}, Project: {workspace.project.title}")
+
+    def log_workspace_deletion(self, workspace):
+        """
+        Log the deletion of a workspace.
+        """
+        logger = logging.getLogger(__name__)
+        logger.info(f"Workspace deleted: ID {workspace.id}, Project: {workspace.project.title}")
 
 
-class WorkSpaceDetailView(RetrieveAPIView):
+class ProjectViewSet(viewsets.ModelViewSet):
     """
-    View for showing workspace information along with projects and team information.
+    A ViewSet for creating, retrieving, updating, and deleting projects.
 
-    **Arguments:**
-        workspace_pk (int): The ID of the workspace to be displayed.
+    This ViewSet allows you to perform CRUD operations on project objects. Projects
+    are associated with workspaces and have various permissions depending on the user's role.
 
-    **Permissions:**
-        IsAuthenticated: The user must be authenticated.
-        IsTeamOwner: The user must be the owner of the workspace.
-
-    **Returns:**
-        A response object with the workspace information, projects, and team information.
-
-    **Raises:**
-        PermissionDenied: If the user does not have permission to view the workspace.
-
+    Attributes:
+        serializer_class (class): The serializer class for serializing project objects.
     """
 
-    serializer_class = WorkSpaceDetailWithProjectsAndTeamSerializer
-    permission_classes = [IsAuthenticated, IsTeamOwner]
-
-    # Add the get_team method
-    def get_team(self):
-        # Extract team from the workspace object
-        return self.get_object().team
+    serializer_class = ProjectSerializer
+    # permission_classes = [IsProjectMember, IsTeamMemberOrOwner]
 
     def get_queryset(self):
         """
-        Gets the queryset for the workspaces that the user can view.
-
-        **Returns:**
-            The queryset for the workspaces that the user can view.
-        """
-        workspace_pk = self.kwargs.get('workspace_pk')
-        return WorkSpace.objects.filter(
-            pk=workspace_pk,
-            team__members=self.request.user
-        )
-    
-    
-    def get(self, request, *args, **kwargs):
-        """
-        Retrieve the workspace information.
-
-        **Arguments:**
-            request (django.http.HttpRequest): The HTTP request.
-
-        **Raises:**
-            PermissionDenied: If the user does not have permission to view the workspace.
-
-        **Returns:**
-            A response object with the workspace information, projects, and team information.
-        """
-        workspace = self.get_object()
-        serializer = self.get_serializer(workspace)
-
-        self.log_workspace_retrieval(workspace)
-
-        return Response(serializer.data)
-
-    def log_workspace_retrieval(self, workspace):
-        """
-        Logs the retrieval of workspace information.
-
-        Args:
-            workspace: The workspace object being retrieved.
-        """
-        logger = logging.getLogger(__name__)
-        logger.info(f"Workspace retrieved: ID {workspace.id}, Team: {workspace.team.name}")
-
-
-class WorkSpaceDeleteView(DestroyAPIView):
-    """
-    View for deleting a workspace by the owner.
-
-    Attributes:
-        queryset (QuerySet): The queryset for retrieving the workspace.
-        serializer_class (class): The serializer class to use for deleting the workspace.
-        permission_classes (list): The list of permission classes required for accessing this view.
-    """
-    queryset = WorkSpace.objects.all()
-    serializer_class = WorkSpaceSerializer
-    permission_classes = [IsAuthenticated, IsTeamOwner]
-
-    def destroy(self, request, *args, **kwargs):
-        workspace = self.get_object()
-
-        if not workspace.team.is_owner(request.user):
-            raise PermissionDenied("You are not the owner of this workspace.")
-
-        self.log_workspace_deletion(workspace)
-
-        workspace.soft_delete()
-        return Response({"message": "Workspace deleted successfully"}, status=200)
-    
-    def log_workspace_deletion(self, workspace):
-        """
-        Logs the deletion of a workspace.
-
-        Args:
-            workspace: The workspace object being deleted.
-        """
-        logger = logging.getLogger(__name__)
-        logger.info(f"Workspace deleted: ID {workspace.id}, Team: {workspace.team.name}")
-
-    
-
-class ProjectCreateView(CreateAPIView):
-    """
-    View for creating a project by workspace owner permission.
-
-    Attributes:
-        serializer_class (class): The serializer class to use for creating a project.
-        permission_classes (list): The list of permission classes required for accessing this view.
-    """
-    serializer_class = ProjectSerializer
-    permission_classes = [IsAuthenticated, IsWorkspaceOwner]
-
-    def create(self, request, *args, **kwargs):
-        """
-        Creates a new project within a workspace.
-
-        Args:
-            request: The HTTP request.
-            *args: The positional arguments.
-            **kwargs: The keyword arguments.
+        Get the queryset for the projects based on user role/permissions.
 
         Returns:
-            A response object.
+            QuerySet: A queryset of project objects filtered based on user permissions.
         """
+        user = self.request.user
+        if user.is_authenticated:
+            if user.is_superuser:
+                # Superuser can see all projects
+                return Project.objects.all()
+            elif user.has_perm('projects.view_project'):
+                # Users with permission to view projects
+                return Project.objects.all()
+            elif user.has_perm('projects.change_project'):
+                # Users with permission to change projects (editors)
+                return Project.objects.filter(editors=user)
+            elif user.has_perm('projects.add_project'):
+                # Users with permission to add projects (contributors)
+                return Project.objects.filter(contributors=user)
+        # If the user doesn't have any relevant permissions, return an empty queryset or handle as needed
+        return Project.objects.none()
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new project within a workspace.
+
+        Args:
+            request (HttpRequest): The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Response: A response indicating the result of the project creation.
+        """
+        user = self.request.user
         workspace = self.get_workspace()
+        if not user.has_perm('projects.add_project'):
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         project = self.perform_create(serializer, workspace)
-        headers = self.get_success_headers(serializer.data)
-        
         response_data = {
             "message": "Project created successfully",
             "project": serializer.data
         }
-        
         self.log_project_creation(project)
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
-        return Response(response_data, status=201, headers=headers)
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve project information.
+
+        Args:
+            request (HttpRequest): The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Response: A response containing the serialized project data.
+        """
+        project = self.get_object()
+        serializer = self.get_serializer(project)
+        self.log_project_view(project)
+        return Response(serializer.data)
+
+
+    def update(self, request, *args, **kwargs):
+        """
+        Update project information.
+        """
+        project = self.get_object()
+        serializer = self.get_serializer(project, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        if not project.team.is_owner(request.user):
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        self.log_project_edit(project)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Delete a project.
+        """
+        project = self.get_object()
+        if not project.workspace.is_owner(request.user):
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        self.log_project_deletion(project)
+        project.soft_delete()
+        return Response({"message": "Project deleted successfully"}, status=status.HTTP_200_OK)
 
     def get_workspace(self):
         workspace_pk = self.kwargs.get('workspace_pk')
@@ -309,400 +286,177 @@ class ProjectCreateView(CreateAPIView):
 
     def perform_create(self, serializer, workspace):
         """
-        Performs the create operation for the project.
-
-        Args:
-            serializer: The serializer instance.
-            workspace: The workspace associated with the project.
-
-        Returns:
-            The newly created project object.
+        Perform the create operation for the project.
         """
         return serializer.save(workspace=workspace)
-    
+
     def log_project_creation(self, project):
         """
-        Logs the creation of a project.
-
-        Args:
-            project: The newly created project object.
+        Log the creation of a project.
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Project created: {project.title}, Workspace: {project.workspace.title}")
-    
 
-class SprintCreateView(CreateAPIView):
-    """
-    View for creating a sprint by team owner permission.
-
-    Attributes:
-        serializer_class (class): The serializer class to use for creating a sprint.
-        permission_classes (list): The list of permission classes required for accessing this view.
-    """
-    serializer_class = SprintSerializer
-    permission_classes = [IsAuthenticated, IsTeamOwner]
-
-    def create(self, request, *args, **kwargs):
-        """
-        Creates a new sprint.
-
-        Args:
-            request (HttpRequest): The HTTP request.
-            *args: The positional arguments.
-            **kwargs: The keyword arguments.
-
-        Returns:
-            A response object.
-
-        Raises:
-            PermissionDenied: If the user is not the owner of the team.
-        """
-        project = self.get_project_object()
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        sprint = self.perform_create(serializer, project)
-        headers = self.get_success_headers(serializer.data)
-        response_data = {
-            "message": "Sprint created successfully",
-            "sprint": serializer.data
-        }
-        return Response(response_data, status=201, headers=headers)
-
-    def get_project_object(self):
-        """
-        Retrieves the project object based on URL parameters.
-
-        Returns:
-            Project: The project object.
-        """
-        project_id = self.kwargs.get('project_id')
-        return get_object_or_404(Project, pk=project_id)
-
-    def perform_create(self, serializer, project):
-        """
-        Performs the create operation.
-
-        Args:
-            serializer (Serializer): The serializer instance.
-            project (Project): The project associated with the sprint.
-
-        Returns:
-            The newly created sprint object.
-
-        Raises:
-            PermissionDenied: If the user is not the owner of the team.
-        """
-        sprint = serializer.save(project=project)
-        
-        # Log the creation of a sprint
-        self.log_sprint_creation(sprint)
-        
-        return sprint
-
-    def log_sprint_creation(self, sprint):
-        """
-        Logs the creation of a sprint.
-
-        Args:
-            sprint: The newly created sprint object.
-        """
-        logger = logging.getLogger(__name__)
-        logger.info(f"Sprint created: {sprint.id}, Project: {sprint.project.title}")
-
-
-class ProjectDetailView(RetrieveAPIView):
-    """
-    View for showing project information along with sprints by member permission.
-
-    **Arguments:**
-        project_pk (int): The ID of the project to be displayed.
-
-    **Permissions:**
-        IsAuthenticated: The user must be authenticated.
-        IsProjectMember: The user must be a member of the project.
-
-    **Returns:**
-        A response object with the project information and a list of sprints.
-
-    **Raises:**
-        PermissionDenied: If the user does not have permission to view the project.
-    """
-
-    serializer_class = ProjectDetailWithSprintsSerializer
-    permission_classes = [IsAuthenticated, IsProjectMember]
-
-    def get_queryset(self):
-        """
-        Gets the queryset for the projects that the user can view.
-
-        **Returns:**
-            The queryset for the projects that the user can view.
-        """
-        project_pk = self.kwargs.get('project_pk')
-        return Project.objects.filter(
-            team__members__in=[self.request.user]
-        ).filter(pk=project_pk)
-
-    def get(self, request, *args, **kwargs):
-        """
-        Retrieve the project information along with sprints.
-
-        **Arguments:**
-            request (django.http.HttpRequest): The HTTP request.
-
-        **Raises:**
-            PermissionDenied: If the user does not have permission to view the project.
-
-        **Returns:**
-            A response object with the project information and a list of sprints.
-        """
-        project = self.get_object()
-        serializer = self.get_serializer(project)
-        self.log_project_view(project)
-
-        return Response(serializer.data)
-    
     def log_project_view(self, project):
         """
         Log the viewing of a project.
-
-        Args:
-            project: The viewed project object.
         """
         logger = logging.getLogger(__name__)
-        logger.info(f"Project viewed: {project.title}, Team: {project.team.name}")
+        if project.team:
+            logger.info(f"Project viewed: {project.title}, Team: {project.team.name}")
+        else:
+            logger.info(f"Project viewed: {project.title}, No associated team")
 
-    
-class ProjectEditView(RetrieveUpdateAPIView):
-    """
-    View for editing project information by owner permission.
 
-    Attributes:
-        serializer_class (class): The serializer class to use for editing project information.
-        permission_classes (list): The list of permission classes required for accessing this view.
-    """
-    serializer_class = ProjectSerializer
-    permission_classes = [IsAuthenticated, IsProjectOwner]
-
-    def get_queryset(self):
-        """
-        Gets the queryset for the projects that the user can edit.
-
-        Returns:
-            The queryset for the projects that the user can edit.
-        """
-        return Project.objects.filter(team__members=self.request.user)
-
-    def get_object(self):
-        """
-        Retrieves the project object.
-
-        Returns:
-            The project object to edit.
-        """
-        project_pk = self.kwargs.get('project_pk')
-        return get_object_or_404(self.get_queryset(), pk=project_pk)
-
-    def update(self, request, *args, **kwargs):
-        """
-        Updates the project information.
-
-        Args:
-            request: The HTTP request.
-            *args: The positional arguments.
-            **kwargs: The keyword arguments.
-
-        Returns:
-            A response object.
-
-        Raises:
-            PermissionDenied: If the user is not the owner of the project.
-        """
-        project = self.get_object()
-        serializer = self.get_serializer(project, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-
-        if not project.team.is_owner(request.user):
-            raise PermissionDenied("You are not the owner of this project.")
-
-        self.log_project_edit(project)
-
-        self.perform_update(serializer)
-        return Response(serializer.data)
-    
     def log_project_edit(self, project):
         """
         Log the editing of a project.
-
-        Args:
-            project: The edited project object.
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Project edited: {project.title}, Team: {project.team.name}")
 
-
-class ProjectDeleteView(DestroyAPIView):
-    """
-    View for deleting a project by the owner.
-
-    Attributes:
-        queryset (QuerySet): The queryset for retrieving the project.
-        serializer_class (class): The serializer class to use for deleting the project.
-        permission_classes (list): The list of permission classes required for accessing this view.
-    """
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    permission_classes = [IsAuthenticated, IsProjectOwner]
-
-    def destroy(self, request, *args, **kwargs):
-        project = self.get_object()
-
-        if not project.workspace.is_owner(request.user):
-            raise PermissionDenied("You are not the owner of this project's workspace.")
-
-        # Log the deletion of the project
-        self.log_project_deletion(project)
-        
-        project.soft_delete()
-        return Response({"message": "Project deleted successfully"}, status=200)
-    
     def log_project_deletion(self, project):
         """
-        Logs the deletion of a project.
-
-        Args:
-            project: The project object being deleted.
+        Log the deletion of a project.
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Project deleted: ID {project.id}, Workspace: {project.workspace.title}")
+        
 
-class SprintEditView(RetrieveUpdateAPIView):
+class SprintViewSet(viewsets.ModelViewSet):
     """
-    View for editing a sprint by the owner.
+    A ViewSet for creating, retrieving, updating, and deleting sprints.
+
+    This ViewSet allows you to perform CRUD operations on sprint objects. Sprints are associated with projects
+    and have various permissions depending on the user's role.
 
     Attributes:
-        serializer_class (class): The serializer class to use for editing the sprint.
-        permission_classes (list): The list of permission classes required for accessing this view.
+        queryset (QuerySet): The queryset for retrieving sprints.
+        serializer_class (class): The serializer class for serializing sprint objects.
+        permission_classes (list): The list of permission classes for controlling access to sprints.
+        lookup_field (str): The lookup field used to retrieve sprints by their ID.
     """
+    
+    queryset = Sprint.objects.all()
     serializer_class = SprintSerializer
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [AllowAny]
+    # permission_classes = [IsSprintOwner, IsTeamMemberOrOwner]
+    lookup_field = 'id'
+   
     def get_queryset(self):
         """
-        Gets the queryset for retrieving the sprint.
+        Get the queryset for sprints based on user role/permissions.
 
-        **Returns:**
-            The queryset for retrieving the sprint.
+        Returns:
+            QuerySet: A queryset of sprint objects filtered based on user permissions.
         """
-        sprint_id = self.kwargs.get('sprint_id')
-        return Sprint.objects.filter(pk=sprint_id)
+        user = self.request.user
+        if user.is_authenticated and user.has_perm('projects.add_sprint'):
+            return Sprint.objects.all()
+        return Sprint.objects.none()
+    
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new sprint within a project.
 
-    def update(self, request, *args, **kwargs):
-        sprint = self.get_object()
+        Args:
+            request (HttpRequest): The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
-        if not sprint.project.workspace.team.is_owner(request.user):
-            raise PermissionDenied("You are not the owner of this sprint's team.")
-
-        serializer = self.get_serializer(sprint, data=request.data, partial=True)
+        Returns:
+            Response: A response indicating the result of the sprint creation.
+        """
+        project = self.get_project()
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        # You can add logging here if needed
-        self.log_sprint_update(sprint)
-
-        return Response(serializer.data)
-
-    def log_sprint_update(self, sprint):
-        """
-        Logs the editing of a sprint.
-
-        Args:
-            sprint: The newly edited sprint object.
-        """
-        logger = logging.getLogger(__name__)
-        logger.info(f"Sprint updated: {sprint.title}, Project: {sprint.project.title}")
-
-
-class SprintDeleteView(DestroyAPIView):
-    """
-    View for deleting a sprint by owner permission.
-
-    Attributes:
-        queryset (QuerySet): The queryset for retrieving the sprint.
-        serializer_class (class): The serializer class to use for deleting the sprint.
-        permission_classes (list): The list of permission classes required for accessing this view.
-    """
-    queryset = Sprint.objects.all()
-    serializer_class = SprintDetailSerializer
-    permission_classes = [IsAuthenticated, IsProjectOwner]
-
-    def destroy(self, request, *args, **kwargs):
-        sprint = self.get_object()
-
-        # Check if the user has permission to delete this sprint
-        if not sprint.project.workspace.team.is_owner(request.user):
-            raise PermissionDenied("You are not the owner of this sprint.")
-
-        # Add a confirmation step
-        if not request.user.confirm_delete(sprint):
-            return Response({"message": "Deletion cancelled"}, status=400)
-
-        # Perform soft delete on the sprint
-        sprint.soft_delete()
-
-        # Log sprint deletion
-        self.log_sprint_deletion(sprint)
-
-        return Response({"message": "Sprint deleted successfully"}, status=200)
-
-    def log_sprint_deletion(self, sprint):
-        """
-        Logs the deletion of a sprint.
-
-        Args:
-            sprint: The deleted sprint object.
-        """
-        logger = logging.getLogger(__name__)
-        logger.info(f"Sprint deleted: {sprint.title}, Team: {sprint.project.workspace.team.name}")
-
-
-class SprintDetailView(RetrieveAPIView):
-    """
-    View for showing sprint information along with tasks by member permission.
-    Attributes:
-        serializer_class (class): The serializer class to use for displaying sprint information.
-        permission_classes (list): The list of permission classes required for accessing this view.
-    """
-    serializer_class = SprintDetailSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self):
-        sprint_id = self.kwargs.get('sprint_id')
-        sprint = Sprint.objects.filter(pk=sprint_id).first()
-
-        if not sprint:
-            raise PermissionDenied("Sprint not found.")
-
-        # Check if the user has permission to access this sprint
-        if not self.request.user in sprint.project.workspace.team.members.all():
-            raise PermissionDenied("You do not have permission to access this sprint.")
-
-        return sprint
+        
+        # Check ownership
+        if project.team:
+            if request.user != project.team.owner:
+                return Response({'message': 'You do not have permission to create a sprint in this project.'}, 
+                                status=status.HTTP_403_FORBIDDEN)
+        elif request.user != project.owner:
+            return Response({'message': 'You do not have permission to create a sprint in this project.'}, 
+                            status=status.HTTP_403_FORBIDDEN)
+        
+        sprint = self.perform_create(serializer, project)
+        response_data = {
+            "message": "Sprint created successfully",
+            "sprint": serializer.data
+        }
+        self.log_sprint_creation(sprint)
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
+        """
+        Retrieve sprint information.
 
-        # Log sprint retrieval
-        self.log_sprint_retrieval(instance)
+        Args:
+            request (HttpRequest): The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
+        Returns:
+            Response: A response containing the serialized sprint data.
+        """
+        sprint = self.get_object()
+        
+        # Check ownership
+        project = sprint.project
+        if project.team:
+            if request.user != project.team.owner:
+                return Response({'message': 'You do not have permission to retrieve this sprint.'}, 
+                                status=status.HTTP_403_FORBIDDEN)
+        elif request.user != project.owner:
+            return Response({'message': 'You do not have permission to retrieve this sprint.'}, 
+                            status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = self.get_serializer(sprint)
+        self.log_sprint_retrieval(sprint)
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Delete a sprint.
+        """
+        sprint = self.get_object()
+        
+        # Check ownership
+        project = sprint.project
+        if project.team:
+            if request.user != project.team.owner:
+                return Response({'message': 'You do not have permission to delete this sprint.'}, 
+                                status=status.HTTP_403_FORBIDDEN)
+        elif request.user != project.owner:
+            return Response({'message': 'You do not have permission to delete this sprint.'}, 
+                            status=status.HTTP_403_FORBIDDEN)
+        
+        self.log_sprint_deletion(sprint)
+        sprint.soft_delete()
+        return Response({"message": "Sprint deleted successfully"}, status=status.HTTP_200_OK)
+
+    
+
+    def perform_create(self, serializer, project):
+        """
+        Perform the create operation for the sprint.
+        """
+        return serializer.save(project=project)
+    
+    
+    logger = logging.getLogger(__name__)
+
+    def log_sprint_creation(self, sprint):
+        """
+        Log the creation of a sprint.
+        """
+        self.logger.info(f"Sprint created - ID: {sprint.id}, Project: {sprint.project.title}")
+
 
     def log_sprint_retrieval(self, sprint):
         """
-        Logs the retrieval of a sprint.
-        Args:
-            sprint: The retrieved sprint object.
+        Log the retrieval of a sprint.
         """
-        logger = logging.getLogger(__name__)
-        logger.info(f"Sprint retrieved: {sprint.title}, Team: {sprint.project.workspace.team.name}")
+        self.logger.info(f"Sprint retrieved - Title: {sprint.started_at.strftime('%Y-%m-%d')}, Team: {sprint.project.workspace.team.name}")

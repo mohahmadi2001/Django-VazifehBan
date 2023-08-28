@@ -3,7 +3,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework import permissions
 
 from accounts.models import Team
-from projects.models import Project
+from projects.models import Project, Sprint
 
 class IsTeamMember(BasePermission):
     """
@@ -31,10 +31,16 @@ class IsTeamOwner(BasePermission):
     Returns:
         bool: True if the user is the owner of the team, False otherwise.
     """
+    
     def has_permission(self, request, view):
-        team = view.get_team()
-        return team.is_owner(request.user)
+        # Check if the user is the owner of the team associated with the workspace.
+        workspace = view.get_object()
+        user = request.user
+        team = workspace.team
 
+        return team.is_owner(user)
+    
+    
 class IsWorkspaceOwner(BasePermission):
     """
     Permission to check if a user is the owner of the workspace associated with the view.
@@ -46,9 +52,11 @@ class IsWorkspaceOwner(BasePermission):
     Returns:
         bool: True if the user is the owner of the workspace, False otherwise.
     """
+    
     def has_permission(self, request, view):
-        workspace = view.get_workspace()
+        workspace = view.get_object()
         return workspace.team.is_owner(request.user)
+
 
 class IsProjectMember(permissions.BasePermission):
     """
@@ -83,3 +91,34 @@ class IsProjectOwner(BasePermission):
 
         # Check if the user is the owner of the project
         return project.team.is_owner(request.user)
+    
+class IsTeamMemberOrOwner(BasePermission):
+    """
+    Custom permission to allow only team members or owners to perform actions.
+    """
+
+    def has_permission(self, request, view):
+        team_id = view.kwargs.get('team_pk')  # Assuming the team ID is passed as a URL parameter
+        try:
+            team = Team.objects.get(pk=team_id)
+        except Team.DoesNotExist:
+            return False
+
+        return team.is_member(request.user) or team.is_owner(request.user)
+    
+    
+    
+class IsSprintOwner(permissions.BasePermission):
+    def has_permission(self, request, view):
+        sprint_id = view.kwargs.get('sprint_id')
+        try:
+            sprint = Sprint.objects.get(id=sprint_id)
+            project = sprint.project
+
+            # Check if the project has a team
+            if project.team:
+                return request.user == project.team.owner
+            else:
+                return request.user == project.owner
+        except Sprint.DoesNotExist:
+            return False
