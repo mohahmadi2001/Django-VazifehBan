@@ -14,7 +14,7 @@ RUN apt-get update && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements.txt and install Python dependencies
 COPY requirements.txt /app/
-RUN pip3 install -r requirements.txt
+RUN pip3 install --user -r requirements.txt
 
 # Copy the current directory contents into the container at /app
 COPY . /app/
