@@ -5,9 +5,8 @@ from core.models import SoftDeleteModel
 
 
 class CustomUser(SoftDeleteModel, AbstractUser):
-    
     teams = models.ManyToManyField('Team', through='UserTeam', related_name='team_members', verbose_name=_("Teams"))
-    
+
     class Meta:
         verbose_name = _("User")
         verbose_name_plural = _("Users")
@@ -17,7 +16,7 @@ class CustomUser(SoftDeleteModel, AbstractUser):
 
     def __str__(self):
         return f"{self.username}"
-    
+
     def has_permission(self, permission_codename):
         """
         Returns True if the user has the specified permission.
@@ -83,15 +82,14 @@ class CustomUser(SoftDeleteModel, AbstractUser):
         user.save()
         return user
 
-   
 
 class Team(SoftDeleteModel, models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
-    members = models.ManyToManyField(CustomUser, through='UserTeam', related_name="teams_as_member", verbose_name=_("Users"))
+    members = models.ManyToManyField(CustomUser, through='UserTeam', related_name="teams_as_member",
+                                     verbose_name=_("Users"))
     owner = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_teams")
     description = models.TextField(verbose_name=_("Description"))
     title = models.CharField(max_length=255, default=' Title')
-
 
     class Meta:
         verbose_name = _("Team")
@@ -99,7 +97,7 @@ class Team(SoftDeleteModel, models.Model):
 
     def __str__(self):
         return self.name
-    
+
     def is_member(self, user):
         """
         Check if a user is a member of this team.
@@ -111,11 +109,11 @@ class Team(SoftDeleteModel, models.Model):
             bool: True if the user is a member of this team, False otherwise.
         """
         return self.members.filter(id=user.id).exists()
-    
+
     def is_owner(self, user):
         """Check if a user is the owner of the team."""
         return self.owner == user
-    
+
     @classmethod
     def create(cls, name, owner, description):
         """Creates a new team.
@@ -172,14 +170,13 @@ class Team(SoftDeleteModel, models.Model):
         except cls.DoesNotExist:
             raise Team.DoesNotExist(f"Team with pk={pk} does not exist.")
 
-        
         team.name = new_name
         team.owner = new_owner
         team.description = new_description
         team.save()
         return team
 
-    
+
 class UserTeam(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_teams")
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_users")

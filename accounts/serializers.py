@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer, SetPasswordSerializer
 
+from accounts.models import Team, UserTeam
+
 User = get_user_model()
 
 
@@ -62,3 +64,27 @@ class CustomSetPasswordSerializer(SetPasswordSerializer):
             raise serializers.ValidationError({"re_new_password": "Passwords do not match."})
 
         return attrs
+
+
+class TeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ('id', 'name', 'members', 'owner', 'description', 'title')
+
+    def create(self, validated_data):
+        return Team.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        return Team.update(instance.pk, **validated_data)
+
+
+class UserTeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserTeam
+        fields = ('id', 'user', 'team')
+
+    def create(self, validated_data):
+        return UserTeam.create(**validated_data)
+
+    def read(self, instance):
+        return UserTeam.read(instance.pk)
