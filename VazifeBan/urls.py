@@ -7,6 +7,7 @@ urlpatterns = [
     re_path(r"^auth/", include("djoser.urls.authtoken")),
     
     path('admin/', admin.site.urls),
+    path('', include('tasks.urls')),
     path('auth/', include('accounts.urls')),
 ]
 
