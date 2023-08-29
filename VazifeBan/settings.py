@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import datetime
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'debug_toolbar',
     'rest_framework',
+    'rest_framework_simplejwt',
     'accounts',
     'projects',
     'tasks',
@@ -62,6 +64,17 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=60),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': datetime.timedelta(days=1),
+    'SLIDING_TOKEN_LIFETIME': datetime.timedelta(days=1),  
+    'SLIDING_TOKEN_REFRESH_LIFETIME': datetime.timedelta(days=1),  
+    'SLIDING_TOKEN_LIFETIME': datetime.timedelta(days=1),  
+    'SLIDING_TOKEN_REFRESH_LIFETIME': datetime.timedelta(days=1),  
+    'SLIDING_TOKEN_LIFETIME': datetime.timedelta(days=1),
+}
 
 ROOT_URLCONF = 'VazifeBan.urls'
 
@@ -161,3 +174,29 @@ LOGGING = {
 }
 
 AUTH_USER_MODEL = "accounts.CustomUser"
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.TokenAuthentication",
+    ),
+}
+
+
+DJOSER = {
+
+    'LOGIN_FIELD': 'username',
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'SET_PASSWORD_RETYPE': True,
+    'PASSWORD_CHANGE_URL': 'password/change/',
+    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/',
+    'SERIALIZERS': {
+        'user_create': 'accounts.serializers.CustomRegistrationSerializer',
+        'user_update': 'accounts.serializers.UserUpdateSerializer',
+        'set_password': 'djoser.serializers.SetPasswordSerializer',
+        'user_delete': 'djoser.serializers.UserDeleteSerializer',
+        'user': 'djoser.serializers.UserSerializer',
+    },
+    
+}
