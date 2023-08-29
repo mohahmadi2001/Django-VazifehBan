@@ -10,7 +10,7 @@ ENV DJANGO_SETTINGS_MODULE VazifeBan.settings
 WORKDIR .
 
 # Install system dependencies
-RUN apt-get update && rm -rf /var/lib/apt/lists/*
+RUN sudo apt-get update && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements.txt and install Python dependencies
 COPY requirements.txt .
