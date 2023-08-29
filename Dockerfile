@@ -1,6 +1,6 @@
 
 # Use an official Python runtime as a parent image
-FROM debian:bookworm-slim
+FROM alpine:3.17
 
 # Set environment variables
 ENV PYTHONUNBUFFERED 1
