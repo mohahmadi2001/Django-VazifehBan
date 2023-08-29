@@ -40,18 +40,53 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'debug_toolbar',
     'rest_framework',
-    'rest_framework_simplejwt',
+    'drf_yasg',
+    'djoser',
     'accounts',
     'projects',
     'tasks',
     'core',
 ]
+
+
+
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        
+        'rest_framework.authentication.SessionAuthentication',
+    ),
 }
+
+
+
+
+SWAGGER_SETTINGS = {
+    'DEFAULT_INFO': 'VazifeBan.api_info',  
+    'SECURITY_DEFINITIONS': {
+        'Basic': {
+            'type': 'basic',
+        },
+    },
+}
+def api_info():
+    return {
+        'title': 'VazifeBan',
+        'version': '1.0',
+        'description': 'VazifeBan API ',
+        'terms_of_service': '',
+        'contact': {
+            'email': 'amirmahdimanafi8@gmail.com.com',
+        },
+        'license': {
+            'name': 'MIT License',
+            'url': 'https://opensource.org/licenses/MIT',
+        },
+    }
+
 
 MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
