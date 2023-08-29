@@ -143,8 +143,12 @@ WSGI_APPLICATION = 'VazifeBan.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'railway',   # Name of your PostgreSQL database
+        'USER': 'postgres',       # PostgreSQL username
+        'PASSWORD': 'KzSvp1Vpk9IIAJ654fTP',  # PostgreSQL password
+        'HOST': 'containers-us-west-120.railway.app',      # Database host (leave it as localhost if the database is on the same machine)
+        'PORT': '6047',               # Leave empty to use the default PostgreSQL port (5432)
     }
 }
 
