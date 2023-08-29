@@ -1,23 +1,23 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from djoser.serializers import UserCreateSerializer,UserSerializer,SetPasswordSerializer
-
+from djoser.serializers import UserCreateSerializer, UserSerializer, SetPasswordSerializer
 
 User = get_user_model()
 
-    
+
 class CustomRegistrationSerializer(UserCreateSerializer):
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
         fields = (
             'username',
-            'first_name', 
-            'last_name', 
-            'email', 
+            'first_name',
+            'last_name',
+            'email',
             'mobile',
-            'password', 
+            'password',
             'confirm_password'
         )
 
@@ -27,8 +27,7 @@ class CustomRegistrationSerializer(UserCreateSerializer):
         if data.get('is_student') and not data.get('student_number'):
             raise serializers.ValidationError("Student number is required for students.")
         return data
-    
-    
+
     def create(self, validated_data):
         user = User.objects.create(
             username=validated_data['username'],
@@ -39,22 +38,21 @@ class CustomRegistrationSerializer(UserCreateSerializer):
 
         user.set_password(validated_data['password'])
         user.save()
-        
+
         return user
-    
 
 
 class UserUpdateSerializer(UserSerializer):
     class Meta(UserSerializer.Meta):
         fields = (
-            'first_name', 
-            'last_name', 
+            'first_name',
+            'last_name',
             'mobile',
         )
-        
-        
+
+
 class CustomSetPasswordSerializer(SetPasswordSerializer):
-    new_password = serializers.CharField(write_only=True, required=True, validators=[...]) 
+    new_password = serializers.CharField(write_only=True, required=True, validators=[...])
 
     def validate(self, attrs):
         new_password = attrs.get('new_password')
