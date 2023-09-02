@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import datetime
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,15 +38,61 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'debug_toolbar',
+    'rest_framework',
+    'drf_yasg',
+    'djoser',
     'accounts',
     'projects',
     'tasks',
     'core',
 ]
 
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+}
+
+
+
+
+SWAGGER_SETTINGS = {
+    'DEFAULT_INFO': 'VazifeBan.api_info',  
+    'SECURITY_DEFINITIONS': {
+        'Basic': {
+            'type': 'basic',
+        },
+    },
+}
+def api_info():
+    return {
+        'title': 'VazifeBan',
+        'version': '1.0',
+        'description': 'VazifeBan API ',
+        'terms_of_service': '',
+        'contact': {
+            'email': 'amirmahdimanafi8@gmail.com.com',
+        },
+        'license': {
+            'name': 'MIT License',
+            'url': 'https://opensource.org/licenses/MIT',
+        },
+    }
+
+
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -53,10 +100,27 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=60),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': datetime.timedelta(days=1),
+    'SLIDING_TOKEN_LIFETIME': datetime.timedelta(days=1),  
+    'SLIDING_TOKEN_REFRESH_LIFETIME': datetime.timedelta(days=1),  
+    'SLIDING_TOKEN_LIFETIME': datetime.timedelta(days=1),  
+    'SLIDING_TOKEN_REFRESH_LIFETIME': datetime.timedelta(days=1),  
+    'SLIDING_TOKEN_LIFETIME': datetime.timedelta(days=1),
+}
+
 ROOT_URLCONF = 'VazifeBan.urls'
+
+INTERNAL_IPS = [
+
+    '127.0.0.1',
+]
 
 TEMPLATES = [
     {
+       
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
         'APP_DIRS': True,
@@ -79,8 +143,12 @@ WSGI_APPLICATION = 'VazifeBan.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'railway',   # Name of your PostgreSQL database
+        'USER': 'postgres',       # PostgreSQL username
+        'PASSWORD': 'lCBU0QZT6RhuG8UvvWxr',  # PostgreSQL password
+        'HOST': 'containers-us-west-159.railway.app',      # Database host (leave it as localhost if the database is on the same machine)
+        'PORT': '6757',               # Leave empty to use the default PostgreSQL port (5432)
     }
 }
 
@@ -144,4 +212,30 @@ LOGGING = {
     },
 }
 
-AUTH_USER_MODEL = "accounts.User"
+AUTH_USER_MODEL = "accounts.CustomUser"
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.TokenAuthentication",
+    ),
+}
+
+
+DJOSER = {
+
+    'LOGIN_FIELD': 'username',
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'SET_PASSWORD_RETYPE': True,
+    'PASSWORD_CHANGE_URL': 'password/change/',
+    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/',
+    'SERIALIZERS': {
+        'user_create': 'accounts.serializers.CustomRegistrationSerializer',
+        'user_update': 'accounts.serializers.UserUpdateSerializer',
+        'set_password': 'djoser.serializers.SetPasswordSerializer',
+        'user_delete': 'djoser.serializers.UserDeleteSerializer',
+        'user': 'djoser.serializers.UserSerializer',
+    },
+    
+}
